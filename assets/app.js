@@ -122,7 +122,7 @@ function renderCheck(mod) {
         ${it.서식번호 ? `<span class="b b-lvl">서식 ${esc(it.서식번호)}</span>` : ''}
       </div>
       ${it.판정규칙 ? `<div class="rule">판정: ${esc(it.판정규칙)}</div>` : ''}
-      ${it.근거조문 ? `<div class="quote">${esc(it.근거조문)}</div>` : ''}
+      ${it.근거조문 ? `<details class="quote-fold"><summary>근거조문(원문) 보기</summary><div class="quote">${esc(it.근거조문)}</div></details>` : ''}
       ${it.red_flag ? `<div class="flag">🚩 ${esc(it.red_flag)}</div>` : ''}
       ${(it.필요서류 || []).length ? `<div class="docs">📄 필요서류: ${(it.필요서류 || []).map(esc).join(' · ')}</div>` : ''}
       <div class="ans-row">

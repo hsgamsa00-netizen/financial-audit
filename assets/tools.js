@@ -89,7 +89,7 @@
       d.innerHTML = `
         <div class="q">${esc(r.이름)}</div>
         <div class="meta"><span class="b b-ev">기준 직접근거</span><span class="b b-lvl">${esc(r.출처파일.replace('.txt', '').replace(/\s*\(\d+\)$/, ''))}</span></div>
-        <div class="quote">${esc(r.근거조문)}</div>
+        <details class="quote-fold"><summary>근거조문(원문) 보기</summary><div class="quote">${esc(r.근거조문)}</div></details>
         <div class="tie-grid">
           <div class="tie-side">${r.좌변.map((nm, i) => inp('L', i, nm)).join('')}</div>
           <div class="tie-eq">=</div>

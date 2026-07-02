@@ -118,6 +118,9 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 .chk .meta{font-size:var(--text-meta);color:var(--muted2);margin:4px 0 8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .chk .rule{font-size:var(--text-sm);color:var(--muted);margin-bottom:8px}
 .chk .quote{font-size:var(--text-sm);background:var(--soft);border-left:3px solid var(--accent-line);border-radius:var(--r-chip);padding:8px 10px;color:var(--ink);white-space:pre-wrap}
+.quote-fold{margin:6px 0}
+.quote-fold summary{cursor:pointer;font-size:var(--text-meta);color:var(--accent);font-weight:700;list-style-position:inside}
+.quote-fold[open] summary{margin-bottom:6px}
 .chk .flag{font-size:var(--text-meta);color:var(--bad);background:var(--bad-soft);border-radius:var(--r-chip);padding:3px 8px;display:inline-block;margin-top:6px}
 .chk .docs{font-size:var(--text-meta);color:var(--muted);margin-top:6px}
 /* 배지: 감사 길잡이 .tag 정합 — 채움 + 은은한 윤곽선(currentColor 기반) */
