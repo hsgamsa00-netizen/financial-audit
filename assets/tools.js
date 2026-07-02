@@ -114,8 +114,20 @@
           v.textContent = `✗ 불일치 ${diff > 0 ? '+' : '−'}${fmt(Math.abs(diff))}원 · 조정내역 설명 요구`;
           eb.hidden = false;
           eb.onclick = () => {
-            excAdd({ src: '검산', 이름: r.이름, 내용: `좌변 ${fmt(sum('L'))} ≠ 우변 ${fmt(sum('R'))}`, 금액차이: diff, 근거: r.근거조문 });
+            // 재현 가능하도록 항목별 입력값을 함께 보존(제3자 검증용)
+            const detail = [...d.querySelectorAll('input[data-side]')].map(x => ({
+              side: x.dataset.side, name: (x.getAttribute('aria-label') || ''), val: x.value,
+            }));
+            excAdd({ src: '검산', 이름: r.이름, 내용: `좌변 ${fmt(sum('L'))} ≠ 우변 ${fmt(sum('R'))}`, 금액차이: diff, 근거: r.근거조문, 입력값: detail });
             eb.textContent = '✓ 예외 등록됨'; eb.disabled = true;
+            let go = d.querySelector('[data-go-report]');
+            if (!go) {
+              go = document.createElement('button');
+              go.className = 'chip'; go.setAttribute('data-go-report', '');
+              go.textContent = '조서에서 확인 →';
+              go.addEventListener('click', () => window.FA_TOOLS.open('report'));
+              eb.parentElement.appendChild(go);
+            }
           };
         }
       };
@@ -242,13 +254,38 @@
       d.innerHTML = `<div class="t"><span class="b ${c.se === '화성' ? 'se-hs' : 'se-bai'}">${esc(c.se === '화성' ? '화성특례시' : c.se)}</span> ${esc(c.t)}</div>
         <div class="m">${esc(c.y)} · srno ${esc(c.s)} ${c.ax && c.ax !== '분야축' ? '· 확장검색' : ''}</div>
         <div class="meta">${(c.b || []).map(b => `<span class="b b-area">${esc(b)}</span>`).join('')}${(c.d || []).map(x => `<span class="b b-lvl">${esc(x)}</span>`).join('')}<span class="b ${cls}">${lb}</span></div>
-        <div class="chips"><button class="chip" data-copy>제목 복사</button><a class="chip" href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이에서 검색 ↗</a></div>`;
+        <div class="chips"><button class="chip" data-copy>제목 복사</button><a class="chip" data-gil href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이에서 검색 ↗</a></div>`;
       d.querySelector('[data-copy]').addEventListener('click', (e) => {
         copyText(c.t).then(ok => { e.target.textContent = ok ? '✓ 복사됨' : '복사 실패'; });
+      });
+      // 길잡이가 URL 검색 파라미터 미지원 → 이동 시 제목 자동 복사(붙여넣기만 하면 됨)
+      d.querySelector('[data-gil]').addEventListener('click', (e) => {
+        copyText(c.t).then(ok => { if (ok) e.target.textContent = '✓ 제목 복사됨 — 붙여넣어 검색 ↗'; });
       });
       box.appendChild(d);
     });
     $('#caseMore').hidden = caseView.shown >= caseView.list.length;
+  }
+
+  /* 입력 영속화 공용 헬퍼(트리·워크시트) — 뷰 이탈·새로고침에도 입력 유지 */
+  function persistInputs(rootEl, key) {
+    const store = () => { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } };
+    const saved = store();
+    rootEl.querySelectorAll('input, textarea, select').forEach((x, i) => {
+      const k = x.id || (x.name ? x.name + '|' + x.value : 'i' + i);
+      if (x.type === 'radio' || x.type === 'checkbox') {
+        if (saved[k]) { x.checked = true; x.dispatchEvent(new Event('change')); }
+        x.addEventListener('change', () => {
+          const s = store();
+          if (x.type === 'radio' && x.name) Object.keys(s).forEach(kk => { if (kk.startsWith(x.name + '|')) delete s[kk]; });
+          if (x.checked) s[k] = 1; else delete s[k];
+          localStorage.setItem(key, JSON.stringify(s));
+        });
+      } else {
+        if (saved[k] != null && !x.value) { x.value = saved[k]; x.dispatchEvent(new Event('input')); }
+        x.addEventListener('change', () => { const s = store(); s[k] = x.value; localStorage.setItem(key, JSON.stringify(s)); });
+      }
+    });
   }
 
   /* ═══ 처분수위 판단트리 ═══ */
@@ -280,11 +317,15 @@
       else { t2.textContent = '→ Q3 변상 6요건 확인'; q3.hidden = false; }
     }));
     const t3v = box.querySelector('[data-t3v]');
-    box.querySelectorAll('input[data-t3]').forEach(x => x.addEventListener('change', () => {
-      const n = [...box.querySelectorAll('input[data-t3]')].filter(c => c.checked).length;
-      t3v.textContent = n === 6 ? '6요건 전부 충족 → 변상판정 검토 (반론·책임조각사유 재확인 필수)'
-        : `충족 ${n}/6 → 일부 미충족 시 징계·문책 / 주의요구 검토`;
-    }));
+    box.querySelectorAll('input[data-t3]').forEach((x, i) => {
+      x.id = 't3_' + i; // 영속화 키 안정화
+      x.addEventListener('change', () => {
+        const n = [...box.querySelectorAll('input[data-t3]')].filter(c => c.checked).length;
+        t3v.textContent = n === 6 ? '6요건 전부 충족 → 변상판정 검토 (반론·책임조각사유 재확인 필수)'
+          : `충족 ${n}/6 → 일부 미충족 시 징계·문책 / 주의요구 검토`;
+      });
+    });
+    persistInputs(box, 'fa_tree:' + orgOf());
     show('tree');
   }
 
@@ -329,6 +370,7 @@
       const r = num($('#c3a').value) - num($('#c3b').value) + num($('#c3c').value);
       $('#c3o').textContent = $('#c3a').value ? `반납 대상액(집행잔액+이자) = ${fmt(r)}원 ${r < 0 ? '· ⚠ 집행액이 교부액 초과 — 확인 필요' : ''}` : '';
     });
+    persistInputs(box, 'fa_calc:' + orgOf());
     show('calc');
   }
 
@@ -369,41 +411,84 @@
     show('report');
   }
 
+  /* 산출물 상태: 마지막 생성 종류·값(더티 가드·파일명 분기용) */
+  let lastGen = { kind: '', value: '' };
+  function outputTo(kind, md) {
+    const out = $('#draftOut');
+    if (out.value && out.value !== lastGen.value &&
+        !confirm('출력창에 직접 수정한 내용이 있습니다. 새로 생성해 덮어쓸까요?')) return;
+    lastGen = { kind, value: md };
+    out.value = md; out.hidden = false; $('#draftBar').hidden = false;
+  }
+
   function makeDraft() {
     const items = scopedItems();
     const resp = window.FA.respAll();
     const nos = items.filter(it => resp[it.id] && resp[it.id].a === '아니오');
     const exc = excAll();
+    const open = exc.filter(e => e.상태 !== '설명가능');
+    const closed = exc.filter(e => e.상태 === '설명가능');
     const d = new Date().toISOString().slice(0, 10);
     let md = `# 감사조서 초안 — ${orgOf()} 재무감사 점검\n\n작성일: ${d} · 도구: 재무감사 도우미(결정론 점검·초안 보조)\n\n`;
-    const answeredN = items.filter(it => resp[it.id] && resp[it.id].a).length; // 화면 요약과 동일 범위
-    md += `## 1. 점검 개요\n- 기관유형: ${orgOf()}\n- 적용 기준: ${orgOf() === '지자체' ? '지방자치단체 결산 통합기준' : orgOf() === '지방공기업' ? '2025사업연도 지방공기업 결산기준' : '2025사업연도 지방출자·출연기관 결산기준'}\n- 응답 항목: ${answeredN}건 / 지적 후보 ${nos.length}건 / 검산 예외 ${exc.length}건\n\n`;
-    if (exc.length) {
-      md += `## 2. 정합성 검산 예외\n`;
-      exc.forEach((e, i) => {
-        md += `\n### 2-${i + 1}. ${e.이름} [${e.상태}]\n- 검사규칙(근거): ${String(e.근거 || '').replace(/\s+/g, ' ').slice(0, 200)}\n- 예외 내용: ${e.내용}${e.금액차이 ? ` (차이 ${Math.abs(e.금액차이).toLocaleString()}원)` : ''}\n- 원인 가설: ${e.메모 || '(기재 필요)'}\n- 추가 요구자료: (기재 필요)\n- 검토자 결론: (기재 필요)\n`;
+    const answeredN = items.filter(it => resp[it.id] && resp[it.id].a).length;
+    md += `## 1. 점검 개요\n- 기관유형: ${orgOf()}\n- 적용 기준: ${orgOf() === '지자체' ? '지방자치단체 결산 통합기준' : orgOf() === '지방공기업' ? '2025사업연도 지방공기업 결산기준' : '2025사업연도 지방출자·출연기관 결산기준'}\n- 응답 항목: ${answeredN}건 / 지적 후보 ${nos.length}건 / 검산 예외 미해결·지적후보 ${open.length}건(설명가능 ${closed.length}건 별도)\n\n`;
+    if (open.length) {
+      md += `## 2. 정합성 검산 예외 (미해결·지적 후보)\n`;
+      open.forEach((e, i) => {
+        md += `\n### 2-${i + 1}. ${e.이름} [${e.상태}] · 등록 ${e.ts || ''}\n- 검사규칙(근거 원문): ${String(e.근거 || '').replace(/\s+/g, ' ')}\n- 예외 내용: ${e.내용}${e.금액차이 ? ` (차이 ${Math.abs(e.금액차이).toLocaleString()}원)` : ''}\n`;
+        if (e.입력값 && e.입력값.length) {
+          md += `- 입력값(재현용):\n`;
+          e.입력값.forEach(v => { md += `    - [${v.side === 'L' ? '좌변' : '우변'}] ${v.name}: ${v.val}\n`; });
+        }
+        md += `- 원인 가설: ${e.메모 || '(기재 필요)'}\n- 추가 요구자료: (기재 필요)\n- 검토자 결론: (기재 필요)\n`;
       });
+      md += '\n';
+    }
+    if (closed.length) {
+      md += `## 2-B. 설명가능(종결) 예외 요약 — ${closed.length}건\n`;
+      closed.forEach(e => { md += `- ${e.이름}: ${e.내용} → 해명: ${e.메모 || '(메모 없음)'}\n`; });
       md += '\n';
     }
     if (nos.length) {
       md += `## 3. 체크리스트 지적 후보\n`;
       nos.forEach((it, i) => {
-        md += `\n### 3-${i + 1}. ${it.착안질문}\n- 영역: ${it.영역 || ''} · 근거 라벨: 기준 직접근거\n- 근거조문(원문): ${String(it.근거조문 || '').replace(/\s+/g, ' ').slice(0, 300)}\n- 확인 서류: ${resp[it.id].doc || '(기재 필요)'}\n- 사실관계·원인·개선방향·조치: (기재 필요 — 사실+원인+개선+처분 구조로)\n`;
+        const r = resp[it.id];
+        md += `\n### 3-${i + 1}. ${it.착안질문}\n- 영역: ${it.영역 || ''} · 항목 ${it.id} · 근거 라벨: 기준 직접근거${it.서식번호 ? ` · 서식 ${it.서식번호}` : ''}\n`;
+        if (it.판정규칙) md += `- 판정규칙: ${it.판정규칙}\n`;
+        if (it.red_flag) md += `- red flag: ${it.red_flag}\n`;
+        md += `- 근거조문(원문): ${String(it.근거조문 || '').replace(/\s+/g, ' ')}\n- 확인 서류: ${r.doc || '(기재 필요)'}\n- 사실관계: ${r.note || '(기재 필요)'}\n- 원인·개선방향·조치: (기재 필요 — 사실+원인+개선+처분 구조로)\n`;
       });
       md += '\n';
     }
-    md += `## 4. 유의사항\n- 본 초안은 합리적 확신 수준의 점검 보조 자료이며 처분·지적 확정이 아님.\n- 인용 수치·조문은 원문과 대조 후 사용할 것.\n`;
-    const out = $('#draftOut');
-    out.value = md; out.hidden = false; $('#draftBar').hidden = false;
+    // 부록: 수행내역(예·해당없음 포함 — 이상 없음 판단의 증적)
+    const doneAll = items.filter(it => resp[it.id] && resp[it.id].a);
+    if (doneAll.length) {
+      md += `## 부록. 점검 수행내역 (${doneAll.length}건)\n\n| 항목 | 응답 | 확인 서류 |\n|---|---|---|\n`;
+      doneAll.forEach(it => { md += `| ${it.id} ${it.착안질문.slice(0, 40)} | ${resp[it.id].a} | ${resp[it.id].doc || ''} |\n`; });
+      md += '\n';
+    }
+    md += `## 유의사항\n- 본 초안은 합리적 확신 수준의 점검 보조 자료이며 처분·지적 확정이 아님.\n- 인용 수치·조문은 원문과 대조 후 사용할 것.\n`;
+    outputTo('감사조서초안', md);
   }
 
   function makeDocs() {
     const items = scopedItems();
-    const docs = new Set();
-    items.forEach(it => (it.필요서류 || []).forEach(x => docs.add(x)));
-    const out = $('#draftOut');
-    out.value = `# 자료요구 목록(안) — ${orgOf()}\n\n` + [...docs].map((x, i) => `${i + 1}. ${x}`).join('\n') + '\n\n※ 점검 모듈 범위에 따라 취사선택하십시오.';
-    out.hidden = false; $('#draftBar').hidden = false;
+    // 모듈별 그룹 + 관련 착안 병기(피감기관 송부 가능 수준)
+    const byMod = {};
+    items.forEach(it => (it.필요서류 || []).forEach(x => {
+      byMod[it.모듈] = byMod[it.모듈] || {};
+      byMod[it.모듈][x] = byMod[it.모듈][x] || [];
+      byMod[it.모듈][x].push(it.id);
+    }));
+    let md = `# 자료요구 목록(안) — ${orgOf()}\n\n`;
+    let n = 0;
+    Object.keys(byMod).forEach(mod => {
+      md += `## ${mod}\n`;
+      Object.entries(byMod[mod]).forEach(([doc, ids]) => { n += 1; md += `${n}. ${doc} (관련 점검: ${ids.slice(0, 4).join(', ')})\n`; });
+      md += '\n';
+    });
+    md += `※ 점검 범위에 따라 취사선택하십시오. 관련 점검 id는 내부 참조용으로 송부 전 삭제 가능합니다.`;
+    outputTo('자료요구목록', md);
   }
 
   /* ── 진입점·이벤트 ── */
@@ -412,6 +497,7 @@
       if (!orgOf()) { alert('기관유형을 먼저 선택하십시오.'); return; }
       ({ tie: renderTie, risk: renderRisk, cases: renderCases, tree: renderTree, calc: renderCalc, report: renderReport })[tool]();
     },
+    expandQuery, // 홈 점검항목 검색이 동일 동의어 확장을 사용
   };
   let caseQT = 0;
   $('#caseQ').addEventListener('input', () => {
@@ -429,7 +515,13 @@
     const blob = new Blob([$('#draftOut').value], { type: 'text/markdown' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `감사조서초안_${orgOf()}_${new Date().toISOString().slice(0, 10)}.md`;
+    a.download = `${lastGen.kind || '산출물'}_${orgOf()}_${new Date().toISOString().slice(0, 10)}.md`;
     a.click(); URL.revokeObjectURL(a.href);
+  });
+  $('#btnWipe').addEventListener('click', () => {
+    if (!confirm(`「${orgOf()}」의 저장 데이터(응답·검산 입력·예외)를 이 브라우저에서 전부 삭제할까요? 되돌릴 수 없습니다.`)) return;
+    ['fa_resp:', 'fa_tie:', 'fa_exc:', 'fa_tree:', 'fa_calc:'].forEach(p => localStorage.removeItem(p + orgOf()));
+    $('#draftOut').value = ''; lastGen = { kind: '', value: '' };
+    renderReport();
   });
 })();

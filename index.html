@@ -15,7 +15,7 @@
   <div class="hd-right">
     <button id="themeBtn" class="theme-btn" aria-label="다크 모드 전환" title="다크 모드 전환">🌙</button>
     <button id="orgChip" class="org-chip" hidden></button>
-    <span id="lvlWrap" class="lvl" hidden>
+    <span id="lvlWrap" class="lvl" hidden title="진입=핵심 문항만 · 심화=전체 문항 (체크리스트·조서 집계 범위가 함께 바뀝니다)">
       <button data-lvl="진입" class="on">진입</button><button data-lvl="심화">심화</button>
     </span>
   </div>
@@ -62,10 +62,16 @@
       </table>
     </details>
     <p class="gate-note">🧭 어떤 유형이든 최종 점검은 ① 재무제표 적정성 ② 내부통제 효과성 ③ 합법성 — <b>3요소 점검틀</b>로 집계됩니다.</p>
+    <div style="text-align:center"><button id="gateConcepts" class="btn line">📘 용어가 낯설다면 — 개념 온보딩 먼저 보기</button></div>
   </section>
 
   <!-- ═══ 홈: 5모듈 ═══ -->
   <section id="v-home" hidden>
+    <div id="firstGuide"></div>
+    <div class="case-bar" style="margin-bottom:12px">
+      <input type="search" id="itemQ" aria-label="점검항목 검색" placeholder="점검항목 검색 (예: 업무추진비, 미수금, 성과급 — 동의어 자동 확장)">
+    </div>
+    <div id="itemQOut"></div>
     <div class="steps">
       <div><b>1. 계획</b><span>위험평가 · 중요성 · 표본</span></div>
       <div><b>2. 통제·거래테스트</b><span>내부통제 · 증빙 대사</span></div>
@@ -85,6 +91,7 @@
     <button id="btnConcepts" class="concept-banner">📘 <b>개념 온보딩</b> — 발생주의·중요성·검사위험·3자 일치 등 최소 개념 20선 <span>열기 →</span></button>
     <div class="notice">
       본 도구는 감사 판단을 대신하지 않습니다. 점검 결과는 <b>합리적 확신</b>(절대 확신 아님) 수준이며, 인용 수치·조문은 반드시 원문과 대조하십시오.
+      모든 응답·입력·예외는 <b>이 브라우저(localStorage)에만 저장</b>되고 서버로 전송되지 않습니다 — 공용 PC에서는 사용 후 조서 화면의 「이 기관 데이터 전체 삭제」를 이용하십시오.
     </div>
   </section>
 
@@ -164,6 +171,7 @@
     <div class="btnbar">
       <button class="btn" id="btnDraft">📋 감사조서 초안 생성</button>
       <button class="btn line" id="btnDocs">📑 자료요구 목록 생성</button>
+      <button class="btn line" id="btnWipe" style="margin-left:auto;color:var(--bad);border-color:var(--bad)">🗑 이 기관 데이터 전체 삭제</button>
     </div>
     <textarea id="draftOut" class="draft" hidden spellcheck="false" aria-label="생성된 초안"></textarea>
     <div class="btnbar" id="draftBar" hidden>
@@ -174,7 +182,7 @@
 
 </main>
 
-<footer class="ft">재무감사 도우미 · 정적 웹 · 런타임 LLM 0 · 기준 원문 인용 SSoT · <a href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이</a> 자매 도구</footer>
+<footer class="ft">재무감사 도우미 · 정적 웹 · 런타임 LLM 0 · 기준 원문 인용 SSoT(지식 기준일 2026-07-03 — 2025사업연도 지방공기업·출자출연 결산기준 및 지자체 결산 통합기준) · <a href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이</a> 자매 도구</footer>
 
 <script src="assets/norm_dict.js"></script>
 <script src="assets/app.js"></script>

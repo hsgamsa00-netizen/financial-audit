@@ -71,10 +71,13 @@ function openView(v) {
     if (location.hash !== '#' + view) history.replaceState(null, '', '#' + view);
   };
   if (v === 'gate') { show('gate'); return; }
+  if (v === 'concepts') { renderConcepts(''); return; } // 개념 온보딩은 기관 미선택도 허용(게이트 도움 진입점)
   if (!S.org) { show('gate'); if (location.hash !== '#gate') history.replaceState(null, '', '#gate'); return; }
   if (v === 'home') { renderHome(); show('home'); }
-  else if (v === 'check') { curMod ? renderCheck(curMod) : fallback('home'); }
-  else if (v === 'concepts') { renderConcepts(''); }
+  else if (v === 'check') {
+    if (!curMod) curMod = localStorage.getItem('fa_mod') || ''; // 새로고침 복원
+    (curMod && itemsFor(curMod).length) ? renderCheck(curMod) : fallback('home');
+  }
   else if (window.FA_TOOLS) { window.FA_TOOLS.open(v); }
 }
 
@@ -85,17 +88,62 @@ function itemsFor(mod) {
     (S.lvl === '심화' || it.난이도 !== '심화'));
 }
 
+function itemsForAllLvl(mod) {
+  return CHECKITEMS.filter(it => (it.기관유형 || []).includes(S.org) && it.모듈 === mod);
+}
+
 function renderHome() {
+  // 첫 방문 1회 권장 순서 안내
+  const fg = $('#firstGuide');
+  if (!localStorage.getItem('fa_seen') && fg) {
+    fg.innerHTML = `<div class="note info" style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+      <span>🧭 <b>처음이신가요?</b> 권장 순서 — ① 📘 개념 온보딩 → ② 🚨 위험 스크리닝(계획) → ③ 모듈 체크리스트 → ④ 🧮 검산기 → ⑤ 📋 조서 생성</span>
+      <button class="chip" id="fgClose">닫기</button></div>`;
+    fg.querySelector('#fgClose').addEventListener('click', () => { localStorage.setItem('fa_seen', '1'); fg.innerHTML = ''; });
+  } else if (fg) fg.innerHTML = '';
+
+  const resp = respAll();
   const grid = $('#modGrid');
   grid.innerHTML = '';
   MODULES.forEach(m => {
-    const n = itemsFor(m.key).length;
+    const list = itemsFor(m.key);
+    const n = list.length;
+    const nAll = itemsForAllLvl(m.key).length;
+    const done = list.filter(it => resp[it.id] && resp[it.id].a).length;
     const b = document.createElement('button');
     b.className = 'mod-card' + (n ? '' : ' empty');
-    b.innerHTML = `<h3>${m.icon} ${m.key}</h3><div class="cnt">${n ? `착안질문 ${n}건` : '준비 중'}</div><div class="cnt">${m.desc}</div>`;
+    // 0건 사유 분기: 심화 전용 vs 이 기관유형 해당 없음
+    const cntTxt = n ? `착안질문 ${n}건 · 응답 ${done}/${n}${done === n && n ? ' ✓' : ''}`
+      : (nAll ? `심화 전환 시 ${nAll}건` : '이 기관유형은 해당 항목 없음');
+    b.innerHTML = `<h3>${m.icon} ${m.key}</h3><div class="cnt">${cntTxt}</div><div class="cnt">${m.desc}</div>`;
     if (n) b.addEventListener('click', () => renderCheck(m.key));
+    else b.setAttribute('aria-disabled', 'true');
     grid.appendChild(b);
   });
+}
+
+/* 홈 전역 점검항목 검색(동의어 확장) */
+function searchItems() {
+  const q = ($('#itemQ').value || '').trim();
+  const out = $('#itemQOut');
+  if (!q) { out.innerHTML = ''; return; }
+  const expand = (window.FA_TOOLS && window.FA_TOOLS.expandQuery) ? window.FA_TOOLS.expandQuery : (x) => [x];
+  const terms = expand(q);
+  const pool = CHECKITEMS.filter(it => (it.기관유형 || []).includes(S.org) && (S.lvl === '심화' || it.난이도 !== '심화'));
+  const hits = pool.filter(it => {
+    const hay = [it.착안질문, it.영역, ...(it.필요서류 || [])].join(' ');
+    return terms.some(t => hay.includes(t));
+  }).slice(0, 12);
+  out.innerHTML = hits.length
+    ? hits.map(it => `<button class="item-hit" data-mod="${esc(it.모듈)}" data-id="${esc(it.id)}"><span class="b b-area">${esc(it.모듈)}</span> ${esc(it.착안질문)}</button>`).join('')
+    : `<div class="view-p">일치하는 점검항목이 없습니다${terms.length > 1 ? ` (동의어 확장: ${terms.join(', ')})` : ''}.</div>`;
+  out.querySelectorAll('.item-hit').forEach(b => b.addEventListener('click', () => {
+    renderCheck(b.dataset.mod);
+    setTimeout(() => {
+      const el = document.querySelector(`input[name="a_${CSS.escape(b.dataset.id)}"]`);
+      if (el) el.closest('.chk').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  }));
 }
 
 function respAll() {
@@ -105,11 +153,26 @@ function respSave(all) { localStorage.setItem('fa_resp:' + S.org, JSON.stringify
 
 function renderCheck(mod) {
   curMod = mod;
+  localStorage.setItem('fa_mod', mod); // 새로고침·딥링크 복원용
   $('#chkTitle').textContent = `${mod} — ${S.org} 점검 착안사항`;
   const list = $('#chkList');
   list.innerHTML = '';
   const resp = respAll();
-  itemsFor(mod).forEach(it => {
+  const items = itemsFor(mod);
+  const done = items.filter(it => resp[it.id] && resp[it.id].a).length;
+  // 상단 상태줄: 진행·난이도 범위·미응답 점프
+  const head = document.createElement('div');
+  head.className = 'chk-head';
+  head.innerHTML = `<span>응답 <b>${done}/${items.length}</b>${S.lvl === '심화' ? ' · 심화 포함' : ' · 진입 문항만'}</span>
+    ${done < items.length ? '<button class="chip" data-jump>미응답 항목으로 이동</button>' : '<span class="b b-ev">모듈 완료 ✓</span>'}`;
+  const jump = head.querySelector('[data-jump]');
+  if (jump) jump.addEventListener('click', () => {
+    const first = items.find(it => !(resp[it.id] && respAll()[it.id].a));
+    const el = first && document.querySelector(`input[name="a_${CSS.escape(first.id)}"]`);
+    if (el) el.closest('.chk').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  list.appendChild(head);
+  items.forEach(it => {
     const r = resp[it.id] || {};
     const d = document.createElement('div');
     d.className = 'chk';
@@ -129,6 +192,10 @@ function renderCheck(mod) {
         ${['예', '아니오', '해당없음'].map(a =>
           `<label class="rad"><input type="radio" name="a_${esc(it.id)}" value="${a}" ${r.a === a ? 'checked' : ''}>${a === '아니오' ? '아니오(지적 후보)' : a}</label>`).join('')}
         <input type="text" class="doc-in" placeholder="확인한 근거서류" value="${esc(r.doc || '')}">
+      </div>
+      <div class="no-extra" ${r.a === '아니오' ? '' : 'hidden'}>
+        <span class="no-fb">🚩 조서의 「지적 후보」에 등록됨 — 발견 내용을 메모해 두면 초안에 자동 반영됩니다</span>
+        <textarea class="note-in" placeholder="발견 내용 메모 (어느 계좌·얼마·언제 — 조서 초안 사실관계 줄에 프리필)">${esc(r.note || '')}</textarea>
       </div>`;
     d.querySelectorAll(`input[name="a_${CSS.escape(it.id)}"]`).forEach(x =>
       x.addEventListener('click', () => {
@@ -141,14 +208,27 @@ function renderCheck(mod) {
           all[it.id] = { ...(all[it.id] || {}), a: x.value };
         }
         respSave(all);
+        d.querySelector('.no-extra').hidden = (all[it.id].a !== '아니오');
       }));
     d.querySelector('.doc-in').addEventListener('change', (e) => {
       const all = respAll();
       all[it.id] = { ...(all[it.id] || {}), doc: e.target.value };
       respSave(all);
     });
+    d.querySelector('.note-in').addEventListener('change', (e) => {
+      const all = respAll();
+      all[it.id] = { ...(all[it.id] || {}), note: e.target.value };
+      respSave(all);
+    });
     list.appendChild(d);
   });
+  // 하단 CTA: 다음 행동 안내
+  const foot = document.createElement('div');
+  foot.className = 'btnbar';
+  const noN = items.filter(it => { const r = respAll()[it.id]; return r && r.a === '아니오'; }).length;
+  foot.innerHTML = `<button class="btn" data-to-report>📋 지적 후보 ${noN}건 → 감사조서·예외 관리로</button>`;
+  foot.querySelector('[data-to-report]').addEventListener('click', () => window.FA_TOOLS && window.FA_TOOLS.open('report'));
+  list.appendChild(foot);
   show('check');
 }
 
@@ -185,7 +265,24 @@ function esc(s) {
 
 /* ── 이벤트 ── */
 document.querySelectorAll('.gate-card').forEach(b =>
-  b.addEventListener('click', () => { S.org = b.dataset.org; renderHome(); show('home'); }));
+  b.addEventListener('click', () => {
+    if (S.org && S.org !== b.dataset.org) {
+      const d = document.getElementById('draftOut');
+      if (d) d.value = ''; // 기관 전환 시 이전 기관 초안 잔존 방지
+    }
+    S.org = b.dataset.org; renderHome(); show('home');
+  }));
+$('#gateConcepts').addEventListener('click', () => renderConcepts(''));
+$('#itemQ').addEventListener('input', () => { clearTimeout(window.__itemQT); window.__itemQT = setTimeout(searchItems, 150); });
+// 감사 4단계 바 → 해당 도구 연결
+const STEP_GO = ['risk', null, 'tie', 'report'];
+document.querySelectorAll('.steps div').forEach((el, i) => {
+  const t = STEP_GO[i];
+  if (!t) return;
+  el.classList.add('step-link');
+  el.setAttribute('role', 'button');
+  el.addEventListener('click', () => window.FA_TOOLS && window.FA_TOOLS.open(t));
+});
 $('#orgChip').addEventListener('click', () => show('gate'));
 $('#gateBack').addEventListener('click', () => { renderHome(); show('home'); });
 $('#themeBtn').addEventListener('click', () => { S.theme = (S.theme === 'dark' ? 'light' : 'dark'); applyTheme(); });
@@ -198,7 +295,7 @@ document.querySelectorAll('.lvl button').forEach(b =>
     else if (!$('#v-report').hidden && window.FA_TOOLS) window.FA_TOOLS.open('report'); // 조서 요약도 난이도 범위 갱신
   }));
 document.querySelectorAll('.back').forEach(b =>
-  b.addEventListener('click', () => show('home')));
+  b.addEventListener('click', () => { S.org ? (renderHome(), show('home')) : show('gate'); }));
 $('#btnConcepts').addEventListener('click', () => renderConcepts(''));
 document.querySelectorAll('[data-tool]').forEach(b =>
   b.addEventListener('click', () => window.FA_TOOLS && window.FA_TOOLS.open(b.dataset.tool)));
@@ -217,10 +314,17 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => { /* 미지원·file:// 등 — 앱 동작에 영향 없음 */ });
 }
 
+// DOMContentLoaded 대기: SW 캐시로 fetch가 수 ms에 끝나면 tools.js 파싱 전에 .then이 돌아
+// FA_TOOLS 미정의로 딥링크가 조용히 무시되는 경합이 실측됨 — 전 스크립트 실행 후로 고정
+const domReady = new Promise(res =>
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', res) : res());
+
 Promise.all([
   fetch('data/checkitems.json').then(r => r.ok ? r.json() : null).catch(() => null),
   fetch('data/concepts.json').then(r => r.ok ? r.json() : null).catch(() => null),
+  domReady,
 ]).then(([items, concepts]) => {
+  try {
   const failed = items === null;
   CHECKITEMS = Array.isArray(items) ? items : [];
   CONCEPTS = Array.isArray(concepts) ? concepts : [];
@@ -246,4 +350,8 @@ Promise.all([
     if (views.includes(h) && h !== 'gate' && h !== 'home') openView(h);
     else show('home');
   } else { show('gate'); }
+  } catch (e) {
+    console.error('[FA init]', e); // 초기화 실패가 조용히 게이트에 머무는 것 방지
+    try { show(S.org ? 'home' : 'gate'); } catch { /* noop */ }
+  }
 });
