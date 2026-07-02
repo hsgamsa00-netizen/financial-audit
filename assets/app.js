@@ -199,6 +199,10 @@ window.FA = {
 };
 
 /* ── 초기화 ── */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => { /* 미지원·file:// 등 — 앱 동작에 영향 없음 */ });
+}
+
 Promise.all([
   fetch('data/checkitems.json').then(r => r.ok ? r.json() : null).catch(() => null),
   fetch('data/concepts.json').then(r => r.ok ? r.json() : null).catch(() => null),

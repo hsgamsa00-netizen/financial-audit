@@ -208,14 +208,26 @@
     if (!data) { $('#caseStats').textContent = ''; $('#caseList').innerHTML = LOAD_FAIL; return; }
     filterCases();
   }
+  function expandQuery(q) {
+    // 감사 길잡이 동의어 사전(norm_dict) 재사용: 검색어가 어느 그룹의 변형이면 그룹 전체로 확장
+    const terms = [q];
+    const dict = (window.NORM_DICT && window.NORM_DICT.synonyms) || [];
+    for (const g of dict) {
+      const vs = [g.canon, ...(g.variants || [])];
+      if (vs.includes(q)) { vs.forEach(v => { if (!terms.includes(v)) terms.push(v); }); break; }
+    }
+    return terms;
+  }
   function filterCases() {
     const all = dataStore['cases_fin.json'] || [];
     const q = ($('#caseQ').value || '').trim();
     const se = $('#caseSe').value; const st = $('#caseSt').value;
+    const terms = q ? expandQuery(q) : [];
     caseView.list = all.filter(c =>
-      (!q || c.t.includes(q)) && (!se || c.se === se) && (!st || c.st === st));
+      (!q || terms.some(t => c.t.includes(t))) && (!se || c.se === se) && (!st || c.st === st));
     caseView.shown = 0;
-    $('#caseStats').textContent = `${caseView.list.length.toLocaleString()}건 일치`;
+    $('#caseStats').textContent = `${caseView.list.length.toLocaleString()}건 일치`
+      + (terms.length > 1 ? ` · 동의어 확장: ${terms.join(', ')}` : '');
     $('#caseList').innerHTML = '';
     moreCases();
   }
