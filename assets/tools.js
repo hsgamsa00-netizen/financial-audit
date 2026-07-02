@@ -6,16 +6,25 @@
   const $ = (s) => document.querySelector(s);
   const orgOf = () => window.FA.S.org;
 
-  /* ── 지연 로딩 데이터 (실패는 캐시하지 않음 → 재진입 시 재시도) ── */
+  /* ── 지연 로딩: cache=진행 중 Promise(중복 fetch 방지) / dataStore=해석 완료 값(동기 접근용).
+       실패는 비캐시 → 재진입 시 재시도 ── */
   const cache = {};
-  async function load(name) {
+  const dataStore = {};
+  function load(name) {
     if (cache[name]) return cache[name];
-    try {
-      const r = await fetch('data/' + name);
-      if (!r.ok) return null;
-      cache[name] = await r.json();
-      return cache[name];
-    } catch { return null; }
+    cache[name] = (async () => {
+      try {
+        const r = await fetch('data/' + name);
+        if (!r.ok) throw new Error(String(r.status));
+        const val = await r.json();
+        dataStore[name] = val;
+        return val;
+      } catch {
+        delete cache[name];
+        return null;
+      }
+    })();
+    return cache[name];
   }
   const LOAD_FAIL = '<div class="chk">⚠ 데이터를 불러오지 못했습니다. 네트워크 확인 후 다시 열어 주십시오.</div>';
 
@@ -45,23 +54,34 @@
   }
 
   const fmt = (n) => (isFinite(n) ? Math.round(n).toLocaleString('ko-KR') : '-');
-  // 한국 회계 관행 음수 표기(△, 괄호)를 음수로 정규화
+  // 한국 회계 관행 음수 표기(△, 괄호) 정규화 + 첫 번째 숫자 그룹만 사용
+  // (전각 문자 제거 방식은 "1,234,567원1)" → 12345671처럼 자릿수가 붙는 오류가 있어 금지)
   const num = (v) => {
     let s = String(v || '').trim();
-    let neg = false;
-    if (/^[△▲(]/.test(s)) { neg = true; s = s.replace(/^[△▲(]/, '').replace(/\)$/, ''); }
-    const n = parseFloat(s.replace(/[^0-9.-]/g, '')) || 0;
-    return neg ? -Math.abs(n) : n;
+    const neg = /^[△▲(-]/.test(s);
+    if (neg) s = s.slice(1).replace(/\)$/, '');
+    const m = s.match(/\d[\d,]*(?:\.\d+)?/);
+    const n = m ? parseFloat(m[0].replace(/,/g, '')) : 0;
+    return neg ? -n : n;
   };
 
   /* ═══ 검산기 ═══ */
+  function tieVals() {
+    try { return JSON.parse(localStorage.getItem('fa_tie:' + orgOf()) || '{}'); } catch { return {}; }
+  }
   async function renderTie() {
-    const data = await load('tie_rules.json');
+    // 뷰를 먼저 열고 채운다(지연 응답이 다른 뷰를 강탈하지 않도록)
+    show('tie');
     const box = $('#tieList');
-    if (!data) { $('#tieTitle').textContent = '정합성 검산기 (cross-tie)'; box.innerHTML = LOAD_FAIL; show('tie'); return; }
-    const rules = data.filter(r => r.기관유형 === orgOf());
-    $('#tieTitle').textContent = `정합성 검산기 (cross-tie) — ${orgOf()} ${rules.length}종`;
+    $('#tieTitle').textContent = '정합성 검산기 (cross-tie)';
+    if (!dataStore['tie_rules.json']) box.innerHTML = '<div class="chk">불러오는 중…</div>';
+    const data = await load('tie_rules.json');
+    if (!data) { box.innerHTML = LOAD_FAIL; return; }
+    const org = orgOf();
+    const rules = data.filter(r => r.기관유형 === org);
+    $('#tieTitle').textContent = `정합성 검산기 (cross-tie) — ${org} ${rules.length}종`;
     box.innerHTML = rules.length ? '' : '<div class="chk">이 기관유형의 등식형 검산규칙이 없습니다.</div>';
+    const saved = tieVals();
     rules.forEach(r => {
       const d = document.createElement('div');
       d.className = 'chk';
@@ -99,10 +119,22 @@
           };
         }
       };
-      d.querySelectorAll('input[data-side]').forEach(x => x.addEventListener('input', calc));
+      // 입력 영속화: 재진입·새로고침에도 입력값 유지
+      const vals = saved[r.id] || {};
+      d.querySelectorAll('input[data-side]').forEach(x => {
+        const key = x.dataset.side + x.dataset.i;
+        if (vals[key] != null) x.value = vals[key];
+        x.addEventListener('input', () => {
+          const all = tieVals();
+          all[r.id] = all[r.id] || {};
+          all[r.id][key] = x.value;
+          localStorage.setItem('fa_tie:' + org, JSON.stringify(all));
+          calc();
+        });
+      });
+      calc(); // 복원값 즉시 판정
       box.appendChild(d);
     });
-    show('tie');
   }
 
   /* ═══ 위험 스크리닝 ═══ */
@@ -115,9 +147,11 @@
     { nm: '공기업 부채비율(%)', warn: 400, grave: 600, dir: 'over' },
   ];
   async function renderRisk() {
-    const refs = await load('risk_rules.json');
+    show('risk'); // 선표시(지연 응답의 뷰 강탈 방지)
     const w = $('#riskWidgets');
-    if (!refs) { w.innerHTML = LOAD_FAIL; $('#riskRef').innerHTML = ''; show('risk'); return; }
+    if (!dataStore['risk_rules.json']) w.innerHTML = '<div class="chk">불러오는 중…</div>';
+    const refs = await load('risk_rules.json');
+    if (!refs) { w.innerHTML = LOAD_FAIL; $('#riskRef').innerHTML = ''; return; }
     w.innerHTML = `<div class="chk"><div class="q">재정위험 판단 지표 (주의/심각)</div><div class="meta"><span class="b b-ev">기준 직접근거</span><span class="b b-lvl">지자체 결산 통합기준</span></div><div class="risk-grid">${
       RISK6.map((r, i) => `<div class="fld"><label>${esc(r.nm)}</label><input data-risk="${i}" inputmode="decimal" aria-label="${esc(r.nm)}"><span class="risk-v" data-rv="${i}"></span><span class="risk-th">주의 ${r.warn}% ${r.dir === 'over' ? '초과' : '미만'} · 심각 ${r.grave}% ${r.dir === 'over' ? '초과' : '미만'}</span></div>`).join('')
     }</div></div>
@@ -135,7 +169,6 @@
     }));
     const ref = $('#riskRef');
     ref.innerHTML = refs.map(r => `<div class="chk"><div class="q">${esc(r.이름)} <span class="b b-lvl">${esc(r.type)}</span> <span class="b b-area">${esc(r.기관유형_원 || r.기관유형)}</span></div><div class="quote">${esc(r.산식_원문 || r.근거조문 || '')}</div>${r.임계값 ? `<div class="rule">임계값: ${esc(typeof r.임계값 === 'string' ? r.임계값 : JSON.stringify(r.임계값))}</div>` : ''}</div>`).join('');
-    show('risk');
   }
 
   /* ═══ 사례 ═══ */
@@ -143,7 +176,7 @@
   let caseView = { list: [], shown: 0 };
   async function renderCases() {
     show('cases');
-    if (!cache['cases_fin.json']) {
+    if (!dataStore['cases_fin.json']) {
       $('#caseStats').textContent = '사례 데이터 불러오는 중… (2.3MB · 최초 1회)';
       $('#caseList').innerHTML = '';
     }
@@ -152,7 +185,7 @@
     filterCases();
   }
   function filterCases() {
-    const all = cache['cases_fin.json'] || [];
+    const all = dataStore['cases_fin.json'] || [];
     const q = ($('#caseQ').value || '').trim();
     const se = $('#caseSe').value; const st = $('#caseSt').value;
     caseView.list = all.filter(c =>
@@ -273,7 +306,8 @@
   function renderReport() {
     const items = scopedItems();
     const resp = window.FA.respAll();
-    const answered = Object.keys(resp).filter(id => resp[id].a);
+    // 분자도 분모와 같은 범위(기관+난이도)로 집계
+    const answered = items.filter(it => resp[it.id] && resp[it.id].a);
     const nos = items.filter(it => resp[it.id] && resp[it.id].a === '아니오');
     const exc = excAll();
     $('#repSummary').innerHTML = `<div class="chk"><div class="q">${esc(orgOf())} — 진행 요약</div>
@@ -340,7 +374,11 @@
       ({ tie: renderTie, risk: renderRisk, cases: renderCases, tree: renderTree, calc: renderCalc, report: renderReport })[tool]();
     },
   };
-  $('#caseQ').addEventListener('input', () => { if (cache['cases_fin.json']) filterCases(); });
+  let caseQT = 0;
+  $('#caseQ').addEventListener('input', () => {
+    clearTimeout(caseQT);
+    caseQT = setTimeout(() => { if (dataStore['cases_fin.json']) filterCases(); }, 150); // 디바운스
+  });
   $('#caseSe').addEventListener('change', filterCases);
   $('#caseSt').addEventListener('change', filterCases);
   $('#caseMore').addEventListener('click', moreCases);

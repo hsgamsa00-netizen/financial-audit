@@ -35,7 +35,11 @@ function show(view) {
   $('#lvlWrap').hidden = !S.org;
   $('#gateBack').hidden = !(view === 'gate' && S.org);
   if (S.org) $('#orgChip').textContent = '🏛 ' + S.org + ' (변경)';
-  if (!navByHash && location.hash !== '#' + view) location.hash = view; // 뒤로가기 지원
+  if (!navByHash && location.hash !== '#' + view) {
+    // 최초 진입(해시 없음)은 replace — 빈 히스토리 항목이 뒤로가기를 한 번 잡아먹지 않도록
+    if (!location.hash) history.replaceState(null, '', '#' + view);
+    else location.hash = view;
+  }
   window.scrollTo(0, 0);
 }
 
@@ -204,9 +208,18 @@ Promise.all([
     $('#v-home').prepend(n);
   }
   const cur = curView();
-  if (cur && cur !== 'gate') { renderHome(); return; } // 사용자가 이미 다른 뷰에 있으면 강제 이동 금지
+  if (cur && cur !== 'gate') {
+    // 사용자가 이미 다른 뷰에 있으면 강제 이동 없이 그 뷰만 새 데이터로 재렌더
+    renderHome();
+    if (cur === 'concepts') renderConcepts('');
+    else if (cur === 'check' && curMod) renderCheck(curMod);
+    else if (cur === 'report' && window.FA_TOOLS) window.FA_TOOLS.open('report');
+    return;
+  }
   const h = location.hash.slice(1);
-  if (S.org && views.includes(h) && h !== 'gate') { renderHome(); openView(h); }
-  else if (S.org) { renderHome(); show('home'); }
-  else { show('gate'); }
+  if (S.org) {
+    renderHome();
+    if (views.includes(h) && h !== 'gate' && h !== 'home') openView(h);
+    else show('home');
+  } else { show('gate'); }
 });

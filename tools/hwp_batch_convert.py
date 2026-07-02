@@ -54,10 +54,13 @@ def convert_one(name: str) -> tuple[str, str]:
         ], capture_output=True, timeout=TIMEOUT)
         if dst.exists() and dst.stat().st_size > 10_000:
             return name, "ok"
+        dst.unlink(missing_ok=True)  # 부분 산출물 잔존 시 registry가 pdf_conv로 오인하는 것 방지
         return name, f"fail(chrome rc={r2.returncode})"
     except subprocess.TimeoutExpired:
+        dst.unlink(missing_ok=True)
         return name, "fail(timeout)"
     except Exception as e:  # noqa: BLE001
+        dst.unlink(missing_ok=True)
         return name, f"fail({type(e).__name__})"
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

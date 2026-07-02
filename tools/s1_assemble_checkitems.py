@@ -48,6 +48,8 @@ def verify_quote(quote: str, src_squashed: str) -> bool:
     # 복수 구절 인용(에이전트가 '/'·줄바꿈·중략표시로 이어 붙임): 구절별로 전부 원문 존재해야 통과
     segs = [squash(s) for s in re.split(r"[/\n]|\(중략\)|…|\.\.\.", quote or "")]
     longs = [s for s in segs if len(s) >= 12]
+    if longs == [q]:
+        return _seg_in(q, src_squashed)  # 단일 구절 = 전체와 동일 — 중복 검사 방지
     if longs and all(_seg_in(s, src_squashed) for s in longs):
         return True
     return _seg_in(q, src_squashed)

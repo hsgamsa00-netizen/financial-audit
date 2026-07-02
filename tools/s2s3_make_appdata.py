@@ -59,20 +59,19 @@ def main():
     with (DATA / "case_source_map.csv").open(encoding="utf-8-sig") as f:
         for row in csv.DictReader(f):
             status[row["card_id"]] = row["원문상태"]
+    from s0_inventory import load_cards  # 샤드 파싱 로직 단일화(복붙 중복 제거)
     cards = []
-    for i in range(1, 9):
-        raw = (Path(PATHS["CARDS"]) / f"cards_p{i}.js").read_text(encoding="utf-8")
-        for c in json.loads(raw[raw.index("["):raw.rindex("]") + 1]):
-            cid = c.get("id")
-            if cid not in fin:
-                continue
-            f_ = fin[cid]
-            cards.append({
-                "id": cid, "s": str(f_.get("srno")), "se": f_.get("series"),
-                "t": c.get("제목") or "", "y": c.get("연도") or "",
-                "b": (c.get("분야") or [])[:2], "d": (c.get("처분종류") or [])[:4],
-                "st": status.get(cid, "none"), "ax": f_.get("선별축", ""),
-            })
+    for c in load_cards():
+        cid = c.get("id")
+        if cid not in fin:
+            continue
+        f_ = fin[cid]
+        cards.append({
+            "id": cid, "s": str(f_.get("srno")), "se": f_.get("series"),
+            "t": c.get("제목") or "", "y": c.get("연도") or "",
+            "b": (c.get("분야") or [])[:2], "d": (c.get("처분종류") or [])[:4],
+            "st": status.get(cid, "none"), "ax": f_.get("선별축", ""),
+        })
     (DATA / "cases_fin.json").write_text(
         json.dumps(cards, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 

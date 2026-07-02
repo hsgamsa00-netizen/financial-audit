@@ -76,8 +76,9 @@ def scan_sources():
         aname = m.group("title") if m else p.stem
         add("감사원", "BAI", p, srno, year, atype, aname, status)
 
-    conv = Path(PATHS.get("BAI_CONV", ""))
-    if conv.is_dir():
+    conv_root = PATHS.get("BAI_CONV")
+    conv = Path(conv_root) if conv_root else None  # 빈 문자열이 Path('.')가 되어 CWD를 스캔하는 사고 방지
+    if conv and conv.is_dir():
         for p in sorted(conv.iterdir()):
             if not p.is_file() or p.suffix.lower() != ".pdf":
                 continue
@@ -136,19 +137,24 @@ def main():
         with reg_path.open(encoding="utf-8-sig", newline="") as f:
             existing = list(csv.DictReader(f))
         by_key = {(r["root"], r["file_name"]): r for r in existing}
-        n = 0
+        n = skipped = 0
         for r in registry:
-            root = Path(PATHS[r["root"]])
+            tgt = by_key.get((r["root"], r["file_name"]))
+            if tgt is not None and tgt.get("sha256"):
+                skipped += 1
+                continue  # 기존 해시 보존 — 전량 재해시 낭비 방지
+            root_path = PATHS.get(r["root"])
+            if not root_path:
+                continue
             h = hashlib.sha256()
-            with (root / r["file_name"]).open("rb") as f:
+            with (Path(root_path) / r["file_name"]).open("rb") as f:
                 for chunk in iter(lambda: f.read(1 << 20), b""):
                     h.update(chunk)
-            tgt = by_key.get((r["root"], r["file_name"]))
             if tgt is not None:
                 tgt["sha256"] = h.hexdigest()
             n += 1
             if n % 300 == 0:
-                print(f"hash {n}/{len(registry)}", flush=True)
+                print(f"hash {n}", flush=True)
         with reg_path.open("w", encoding="utf-8-sig", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(existing[0].keys()))
             w.writeheader()
@@ -160,7 +166,7 @@ def main():
         dups = {k: v for k, v in dup.items() if len(v) > 1}
         (DATA / "gate_g5_duplicates.json").write_text(
             json.dumps(dups, ensure_ascii=False, indent=1), encoding="utf-8")
-        print(f"해시 완료 {n}건 · 중복그룹 {len(dups)}")
+        print(f"해시 완료 신규 {n}건(스킵 {skipped}) · 중복그룹 {len(dups)}")
         return
 
     # ── srno → 최우선 원문상태 색인 (감사원/화성 분리) ──
@@ -244,8 +250,7 @@ def main():
     g2 = [k for k in best if k not in card_srnos]  # 원문 있는데 카드 없음
     field_missing = Counter()
     short_cards = 0
-    fin_field_cards = fin_by_field
-    for c in fin_field_cards:
+    for c in fin_by_field:
         for fld in ("근거페이지", "금액", "처분종류", "연도"):
             v = c.get(fld)
             if not v:
@@ -285,12 +290,12 @@ def main():
         "G8_HWP변환대상_재무참조문서": len(g8_files),
     }
     (DATA / "s0_summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=1, default=dict), encoding="utf-8")
+        json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
     (DATA / "gate_g2_unreferenced_sources.json").write_text(
         json.dumps(sorted(f"{a}/{b}" for a, b in g2), ensure_ascii=False, indent=1), encoding="utf-8")
     (DATA / "gate_g8_hwp_targets.json").write_text(
         json.dumps(g8_files, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(json.dumps(summary, ensure_ascii=False, indent=1, default=dict))
+    print(json.dumps(summary, ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":
