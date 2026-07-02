@@ -2,7 +2,7 @@
    전략: 앱 셸(assets·index)=cache-first / 데이터(data/*.json)=network-first(오프라인 시 캐시 폴백)
    → 데이터는 온라인이면 항상 최신, 셸은 VERSION 범프로 갱신 */
 'use strict';
-const VERSION = 'fa-v1';
+const VERSION = 'fa-v3';
 const SHELL = [
   './', 'index.html',
   'assets/tokens.css', 'assets/app.css',
@@ -10,7 +10,10 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // no-cache: 브라우저 HTTP 캐시의 구본이 새 캐시에 담기는 것 방지(스테일 셸 사고)
+  e.waitUntil(caches.open(VERSION)
+    .then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'no-cache' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {

@@ -239,8 +239,8 @@
       const [lb, cls] = ST_BADGE[c.st] || ST_BADGE.none;
       const d = document.createElement('div');
       d.className = 'case';
-      d.innerHTML = `<div class="t">${esc(c.t)}</div>
-        <div class="m">${esc(c.se)} · ${esc(c.y)} · srno ${esc(c.s)} ${c.ax && c.ax !== '분야축' ? '· 확장검색' : ''}</div>
+      d.innerHTML = `<div class="t"><span class="b ${c.se === '화성' ? 'se-hs' : 'se-bai'}">${esc(c.se === '화성' ? '화성특례시' : c.se)}</span> ${esc(c.t)}</div>
+        <div class="m">${esc(c.y)} · srno ${esc(c.s)} ${c.ax && c.ax !== '분야축' ? '· 확장검색' : ''}</div>
         <div class="meta">${(c.b || []).map(b => `<span class="b b-area">${esc(b)}</span>`).join('')}${(c.d || []).map(x => `<span class="b b-lvl">${esc(x)}</span>`).join('')}<span class="b ${cls}">${lb}</span></div>
         <div class="chips"><button class="chip" data-copy>제목 복사</button><a class="chip" href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이에서 검색 ↗</a></div>`;
       d.querySelector('[data-copy]').addEventListener('click', (e) => {

@@ -4,6 +4,8 @@
 .hd-sub{font-size:var(--text-meta);color:var(--muted);font-weight:400;margin-left:8px}
 .hd-right{margin-left:auto;display:flex;gap:10px;align-items:center}
 .org-chip{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);border-radius:999px;padding:4px 14px;font-weight:700;font-size:var(--text-sm);cursor:pointer;font-family:inherit}
+.theme-btn{border:1px solid var(--line);background:var(--card);border-radius:999px;width:34px;height:34px;cursor:pointer;font-size:15px;line-height:1}
+.theme-btn:hover{border-color:var(--accent-line)}
 .lvl{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .lvl button{border:0;background:var(--card);padding:5px 14px;font-size:var(--text-meta);cursor:pointer;color:var(--muted);font-family:inherit}
 .lvl button.on{background:var(--accent);color:#fff;font-weight:700}
@@ -56,9 +58,9 @@ table.cmp th{background:var(--soft);white-space:nowrap}
 .ans-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
 .rad{display:flex;align-items:center;gap:5px;font-size:var(--text-sm);cursor:pointer}
 .rad.t3{display:block;padding:3px 0}
-.doc-in{flex:1;min-width:200px;border:1px solid var(--line);border-radius:var(--r-btn);padding:7px 10px;font-size:var(--text-sm);font-family:inherit}
+.doc-in{flex:1;min-width:200px;border:1px solid var(--line);border-radius:var(--r-btn);padding:7px 10px;font-size:var(--text-sm);font-family:inherit;background:var(--card);color:var(--ink)}
 .fld label{display:block;font-size:var(--text-meta);color:var(--muted);margin-bottom:3px}
-.fld input{width:100%;border:1px solid var(--line);border-radius:var(--r-btn);padding:8px 10px;font-size:var(--text-body);text-align:right;font-family:inherit;box-sizing:border-box}
+.fld input{width:100%;border:1px solid var(--line);border-radius:var(--r-btn);padding:8px 10px;font-size:var(--text-body);text-align:right;font-family:inherit;box-sizing:border-box;background:var(--card);color:var(--ink)}
 .fld select{width:100%;border:1px solid var(--line);border-radius:var(--r-btn);padding:8px;font-size:var(--text-sm);font-family:inherit;background:var(--card);box-sizing:border-box}
 .btnbar{display:flex;gap:10px;margin-top:var(--space-4);flex-wrap:wrap}
 .btn{border:0;background:var(--accent);color:#fff;font-weight:700;border-radius:var(--r-btn);padding:9px 18px;font-size:var(--text-sm);cursor:pointer;font-family:inherit}
@@ -87,9 +89,10 @@ table.cmp th{background:var(--soft);white-space:nowrap}
 
 /* 사례 */
 .case-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-3)}
-.case-bar input[type=search]{flex:1;min-width:220px;border:1px solid var(--line);border-radius:var(--r-btn);padding:8px 12px;font-size:var(--text-sm);font-family:inherit}
+.case-bar input[type=search]{flex:1;min-width:220px;border:1px solid var(--line);border-radius:var(--r-btn);padding:8px 12px;font-size:var(--text-sm);font-family:inherit;background:var(--card);color:var(--ink)}
 .case-bar select{border:1px solid var(--line);border-radius:var(--r-btn);padding:8px;font-size:var(--text-sm);font-family:inherit;background:var(--card)}
-.case{border:1px solid var(--line);border-radius:var(--r-card);background:var(--card);padding:12px 16px;margin-bottom:10px}
+.case{border:1px solid var(--line);border-radius:var(--r-card);background:var(--card);padding:12px 16px;margin-bottom:10px;box-shadow:var(--shadow);transition:border-color .15s}
+.case:hover{border-color:var(--accent-line)}
 .case .t{font-weight:700;font-size:var(--text-sm)}
 .case .m{font-size:var(--text-meta);color:var(--muted2);margin:2px 0 6px}
 .st-pdf{background:var(--src-pdf-soft);color:var(--src-pdf)}
@@ -105,7 +108,7 @@ table.cmp{min-width:560px}
 table.xt th,table.xt td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
 table.xt th{background:var(--soft);font-size:var(--text-meta)}
 table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--r-chip);padding:4px 6px;font-size:var(--text-meta);font-family:inherit;width:100%;box-sizing:border-box}
-.draft{width:100%;min-height:320px;margin-top:var(--space-4);border:1px solid var(--line);border-radius:var(--r-card);padding:14px;font:13px/1.6 Consolas,'D2Coding',monospace;box-sizing:border-box}
+.draft{width:100%;min-height:320px;margin-top:var(--space-4);border:1px solid var(--line);border-radius:var(--r-card);padding:14px;font:13px/1.6 Consolas,'D2Coding',monospace;box-sizing:border-box;background:var(--card);color:var(--ink)}
 
 /* 체크리스트 */
 .back{border:0;background:none;color:var(--accent);font-weight:700;cursor:pointer;font-size:var(--text-sm);padding:0;margin-bottom:var(--space-3);font-family:inherit}
@@ -117,7 +120,12 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 .chk .quote{font-size:var(--text-sm);background:var(--soft);border-left:3px solid var(--accent-line);border-radius:var(--r-chip);padding:8px 10px;color:var(--ink);white-space:pre-wrap}
 .chk .flag{font-size:var(--text-meta);color:var(--bad);background:var(--bad-soft);border-radius:var(--r-chip);padding:3px 8px;display:inline-block;margin-top:6px}
 .chk .docs{font-size:var(--text-meta);color:var(--muted);margin-top:6px}
-.b{display:inline-block;border-radius:var(--r-chip);padding:2px 8px;font-size:var(--text-meta);font-weight:700}
+/* 배지: 감사 길잡이 .tag 정합 — 채움 + 은은한 윤곽선(currentColor 기반) */
+.b{display:inline-block;border-radius:var(--r-chip);padding:2px 8px;font-size:var(--text-meta);font-weight:700;border:1px solid var(--line)}
+@supports (color: color-mix(in srgb, red, blue)){.b{border-color:color-mix(in srgb, currentColor 32%, transparent)}}
 .b-area{background:var(--accent-soft);color:var(--accent)}
 .b-lvl{background:var(--soft);color:var(--muted)}
 .b-ev{background:var(--info-soft);color:var(--info)}
+/* 계열 배지(감사 길잡이 정체성 정합: 감사원=블루 윤곽·화성=오렌지 윤곽) */
+.se-bai{background:var(--accent-soft);color:var(--accent)}
+.se-hs{background:var(--hs-soft);color:var(--hs)}

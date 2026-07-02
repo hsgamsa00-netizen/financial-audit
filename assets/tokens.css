@@ -31,5 +31,30 @@
   /* 검산 판정 */
   --tie-ok:var(--good);--tie-ok-soft:var(--good-soft);
   --tie-bad:var(--bad);--tie-bad-soft:var(--bad-soft);
+  /* 화성특례시 정체성 오렌지(감사 길잡이 정합·계열 배지 전용) */
+  --hs:#F36F21;--hs-soft:#fdeee4;
+  color-scheme:light;
+}
+
+/* ── 다크 모드(토글 선택·기본=OS 설정) — 대비 유지: 본문 텍스트 AA 이상 ── */
+[data-theme="dark"]{
+  --bg:#14171b;--card:#1d2228;--ink:#e7eaee;--muted:#a0aab5;--line:#343c45;--soft:#272e35;--line-strong:#4a545f;
+  --accent:#66aae8;--accent-soft:#1a2a3c;--accent-line:#2f4a68;
+  --good:#63bf7e;--good-soft:#15281b;--warn:#d9a94a;--warn-soft:#2c2413;
+  --bad:#e2705c;--bad-soft:#321a15;--info:#5fa8dd;--info-soft:#14283a;--muted2:#8b95a1;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  --sev-grave:#d98d84;--sev-grave-soft:#33201d;--sev-grave-line:#57332e;
+  --sev-admin:#9fb0c2;--sev-admin-soft:#242b33;--sev-admin-line:#3c4650;
+  --sev-etc:#8a94a0;--sev-etc-soft:#232930;--sev-etc-line:var(--line);
+  --src-pdf:#6cc287;--src-pdf-soft:#16301e;
+  --src-hwp:#d3a54b;--src-hwp-soft:#2e2512;
+  --src-csd:#98a2ad;--src-csd-soft:#262c33;
+  --src-none:#e2705c;--src-none-soft:#331a14;
+  --ev-std:#6fb0ea;--ev-std-soft:#182a3e;
+  --ev-case:#63a9dc;--ev-case-soft:#14283a;
+  --ev-sim:#98a2ad;--ev-sim-soft:#262c33;
+  --ev-unv:#d3a54b;--ev-unv-soft:#2e2512;
+  --hs:#f5854a;--hs-soft:#33210f;
+  color-scheme:dark;
 }
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard GOV","Pretendard","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word}

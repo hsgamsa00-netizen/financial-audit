@@ -17,7 +17,20 @@ const S = {
   set org(v) { localStorage.setItem('fa_org', v); },
   get lvl() { return localStorage.getItem('fa_lvl') || '진입'; },
   set lvl(v) { localStorage.setItem('fa_lvl', v); },
+  get theme() {
+    return localStorage.getItem('fa_theme')
+      || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  },
+  set theme(v) { localStorage.setItem('fa_theme', v); },
 };
+
+/* 테마는 최우선 적용(깜빡임 최소화) */
+function applyTheme() {
+  document.documentElement.dataset.theme = S.theme;
+  const b = document.getElementById('themeBtn');
+  if (b) b.textContent = S.theme === 'dark' ? '☀️' : '🌙';
+}
+applyTheme();
 
 let CHECKITEMS = [];
 let CONCEPTS = [];
@@ -175,6 +188,7 @@ document.querySelectorAll('.gate-card').forEach(b =>
   b.addEventListener('click', () => { S.org = b.dataset.org; renderHome(); show('home'); }));
 $('#orgChip').addEventListener('click', () => show('gate'));
 $('#gateBack').addEventListener('click', () => { renderHome(); show('home'); });
+$('#themeBtn').addEventListener('click', () => { S.theme = (S.theme === 'dark' ? 'light' : 'dark'); applyTheme(); });
 document.querySelectorAll('.lvl button').forEach(b =>
   b.addEventListener('click', () => {
     S.lvl = b.dataset.lvl;
