@@ -117,7 +117,7 @@ function renderCheck(mod) {
           `<label class="rad"><input type="radio" name="a_${esc(it.id)}" value="${a}" ${r.a === a ? 'checked' : ''}>${a === '아니오' ? '아니오(지적 후보)' : a}</label>`).join('')}
         <input type="text" class="doc-in" placeholder="확인한 근거서류" value="${esc(r.doc || '')}">
       </div>`;
-    d.querySelectorAll(`input[name="a_${it.id}"]`).forEach(x =>
+    d.querySelectorAll(`input[name="a_${CSS.escape(it.id)}"]`).forEach(x =>
       x.addEventListener('click', () => {
         const all = respAll();
         if ((all[it.id] || {}).a === x.value) {

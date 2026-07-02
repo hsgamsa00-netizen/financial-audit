@@ -9,7 +9,9 @@ from pathlib import Path
 DATA = Path(__file__).resolve().parent.parent / "data"
 ORGS = {"지자체", "지방공기업", "출자·출연기관"}
 MODULES = {"세입", "세출", "보조금·출연금", "재산·물품", "손해·변상", "결산·재무제표", "재무건전성"}
-STATES = {"pdf", "pdf_conv", "hwp", "csd", "none"}
+STATES = {"pdf", "pdf_conv", "hwp", "zip", "csd", "none"}
+import re
+ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")  # 라디오 name·셀렉터에 안전한 문자만
 errors = []
 
 def check(cond, msg):
@@ -22,6 +24,7 @@ def main():
     ids = set()
     for it in ci:
         check(it.get("id") and it["id"] not in ids, f"checkitem id 중복/누락: {it.get('id')}")
+        check(bool(ID_RE.match(it.get("id") or "")), f"checkitem id 특수문자: {it.get('id')}")
         ids.add(it.get("id"))
         check(set(it.get("기관유형") or []) <= ORGS and it.get("기관유형"), f"{it.get('id')}: 기관유형 이상 {it.get('기관유형')}")
         check(it.get("모듈") in MODULES, f"{it.get('id')}: 모듈 이상 {it.get('모듈')}")

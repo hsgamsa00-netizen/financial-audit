@@ -116,13 +116,13 @@ def load_cards():
 
 
 def card_series_srno(card):
-    """카드의 계열(감사원/화성)과 정규화 srno 문자열."""
+    """카드의 계열(감사원/화성)과 정규화 srno 문자열.
+    ★계열은 카드의 출처계열 필드가 정답(숫자형 srno 휴리스틱은 화성 시청홈 timestamp형 244건을 오분류)."""
     s = card.get("srno")
-    if isinstance(s, int):
-        return "감사원", str(s)
-    if isinstance(s, str) and s.isdigit():
+    series = "화성" if "화성" in str(card.get("출처계열", "")) else "감사원"
+    if series == "감사원" and (isinstance(s, int) or (isinstance(s, str) and s.isdigit())):
         return "감사원", str(int(s))
-    return "화성", (s or "")
+    return series, str(s or "")
 
 
 def main():
@@ -242,15 +242,13 @@ def main():
         w.writerows(map_rows)
 
     # ── 출력: 재무카드 선별 목록 ──
-    fin_list = [{
-        "card_id": c.get("id"), "srno": card_series_srno(c)[1],
-        "series": card_series_srno(c)[0], "선별축": "분야축",
-        "분야": c.get("분야"), "연도": c.get("연도"), "제목": c.get("제목"),
-    } for c in fin_by_field] + [{
-        "card_id": c.get("id"), "srno": card_series_srno(c)[1],
-        "series": card_series_srno(c)[0], "선별축": f"recall:{kw}",
-        "분야": c.get("분야"), "연도": c.get("연도"), "제목": c.get("제목"),
-    } for c, kw in fin_by_kw]
+    def fin_row(c, axis):
+        se, srno = card_series_srno(c)
+        return {"card_id": c.get("id"), "srno": srno, "series": se, "선별축": axis,
+                "분야": c.get("분야"), "연도": c.get("연도"), "제목": c.get("제목"),
+                "처분종류": c.get("처분종류") or []}  # s2s3가 샤드 재로딩 없이 쓰도록 포함
+    fin_list = ([fin_row(c, "분야축") for c in fin_by_field]
+                + [fin_row(c, f"recall:{kw}") for c, kw in fin_by_kw])
     (DATA / "finance_cards.json").write_text(
         json.dumps(fin_list, ensure_ascii=False, indent=1), encoding="utf-8")
 

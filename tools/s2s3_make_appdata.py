@@ -31,16 +31,33 @@ def org_of(s):
     return "지자체"
 
 def addends(expr):
-    parts = [p.strip() for p in re.split(r"[+＋]", expr or "") if p.strip()]
+    """'+' 분리하되 괄호 안은 통째로 유지 — '이월재원(A+B+C)'가 3필드로 쪼개지는 오류 방지."""
+    parts, buf, depth = [], "", 0
+    for ch in expr or "":
+        if ch in "(（":
+            depth += 1
+        elif ch in ")）":
+            depth = max(0, depth - 1)
+        if ch in "+＋" and depth == 0:
+            if buf.strip():
+                parts.append(buf.strip())
+            buf = ""
+        else:
+            buf += ch
+    if buf.strip():
+        parts.append(buf.strip())
     return parts or [expr or ""]
 
 def main():
+    import hashlib
     rules = json.loads((DATA / "check_rules.json").read_text(encoding="utf-8"))
     ties, risks = [], []
     for i, r in enumerate(rules):
         org = org_of(r.get("기관유형", ""))
+        # 안정 ID: 위치 기반(R001…)은 재생성·재정렬 시 검산기 저장값이 다른 등식에 붙는 사고 유발
+        stable = hashlib.md5(f"{r.get('이름')}|{r.get('기관유형')}|{r.get('출처파일')}".encode("utf-8")).hexdigest()[:8]
         base = {
-            "id": f"R{i+1:03d}", "이름": r.get("이름"), "기관유형": org,
+            "id": f"R-{stable}", "이름": r.get("이름"), "기관유형": org,
             "기관유형_원": r.get("기관유형"), "근거조문": r.get("근거조문"),
             "출처파일": r.get("출처파일"), "산식_원문": r.get("산식_원문"),
         }
@@ -59,17 +76,13 @@ def main():
     with (DATA / "case_source_map.csv").open(encoding="utf-8-sig") as f:
         for row in csv.DictReader(f):
             status[row["card_id"]] = row["원문상태"]
-    from s0_inventory import load_cards  # 샤드 파싱 로직 단일화(복붙 중복 제거)
+    # finance_cards.json이 필요한 전 필드(처분종류 포함)를 보유 — 샤드 8개(21,503건) 재로딩 불필요
     cards = []
-    for c in load_cards():
-        cid = c.get("id")
-        if cid not in fin:
-            continue
-        f_ = fin[cid]
+    for cid, f_ in fin.items():
         cards.append({
             "id": cid, "s": str(f_.get("srno")), "se": f_.get("series"),
-            "t": c.get("제목") or "", "y": c.get("연도") or "",
-            "b": (c.get("분야") or [])[:2], "d": (c.get("처분종류") or [])[:4],
+            "t": f_.get("제목") or "", "y": f_.get("연도") or "",
+            "b": (f_.get("분야") or [])[:2], "d": (f_.get("처분종류") or [])[:4],
             "st": status.get(cid, "none"), "ax": f_.get("선별축", ""),
         })
     (DATA / "cases_fin.json").write_text(

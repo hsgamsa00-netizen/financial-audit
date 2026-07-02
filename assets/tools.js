@@ -124,12 +124,12 @@
       d.querySelectorAll('input[data-side]').forEach(x => {
         const key = x.dataset.side + x.dataset.i;
         if (vals[key] != null) x.value = vals[key];
-        x.addEventListener('input', () => {
+        x.addEventListener('input', calc); // 판정은 즉시
+        x.addEventListener('change', () => { // 저장은 포커스 아웃 시(키 입력마다 전체 blob 직렬화 방지)
           const all = tieVals();
           all[r.id] = all[r.id] || {};
           all[r.id][key] = x.value;
           localStorage.setItem('fa_tie:' + org, JSON.stringify(all));
-          calc();
         });
       });
       calc(); // 복원값 즉시 판정
@@ -196,7 +196,7 @@
   }
 
   /* ═══ 사례 ═══ */
-  const ST_BADGE = { pdf: ['PDF', 'st-pdf'], pdf_conv: ['변환PDF', 'st-conv'], hwp: ['HWP만', 'st-hwp'], csd: ['CSD-DRM', 'st-csd'], none: ['미보존·주의', 'st-none'] };
+  const ST_BADGE = { pdf: ['PDF', 'st-pdf'], pdf_conv: ['변환PDF', 'st-conv'], hwp: ['HWP만', 'st-hwp'], zip: ['압축원문', 'st-hwp'], csd: ['CSD-DRM', 'st-csd'], none: ['미보존·주의', 'st-none'] };
   let caseView = { list: [], shown: 0 };
   async function renderCases() {
     show('cases');
@@ -351,7 +351,9 @@
       <div class="quote">${esc(it.근거조문 || '')}</div>
       ${resp[it.id].doc ? `<div class="docs">📄 확인 서류: ${esc(resp[it.id].doc)}</div>` : ''}</div>`).join('')
       : '<div class="chk">지적 후보가 없습니다. 체크리스트에서 "아니오" 응답 시 여기에 모입니다.</div>';
-    $('#draftOut').hidden = true; $('#draftBar').hidden = true;
+    // 생성된 초안이 있으면 유지(예외 행 삭제 등 재렌더에 초안이 사라지지 않도록)
+    const hasDraft = !!$('#draftOut').value;
+    $('#draftOut').hidden = !hasDraft; $('#draftBar').hidden = !hasDraft;
     show('report');
   }
 
@@ -362,7 +364,8 @@
     const exc = excAll();
     const d = new Date().toISOString().slice(0, 10);
     let md = `# 감사조서 초안 — ${orgOf()} 재무감사 점검\n\n작성일: ${d} · 도구: 재무감사 도우미(결정론 점검·초안 보조)\n\n`;
-    md += `## 1. 점검 개요\n- 기관유형: ${orgOf()}\n- 적용 기준: ${orgOf() === '지자체' ? '지방자치단체 결산 통합기준' : orgOf() === '지방공기업' ? '2025사업연도 지방공기업 결산기준' : '2025사업연도 지방출자·출연기관 결산기준'}\n- 응답 항목: ${Object.keys(resp).filter(id => resp[id].a).length}건 / 지적 후보 ${nos.length}건 / 검산 예외 ${exc.length}건\n\n`;
+    const answeredN = items.filter(it => resp[it.id] && resp[it.id].a).length; // 화면 요약과 동일 범위
+    md += `## 1. 점검 개요\n- 기관유형: ${orgOf()}\n- 적용 기준: ${orgOf() === '지자체' ? '지방자치단체 결산 통합기준' : orgOf() === '지방공기업' ? '2025사업연도 지방공기업 결산기준' : '2025사업연도 지방출자·출연기관 결산기준'}\n- 응답 항목: ${answeredN}건 / 지적 후보 ${nos.length}건 / 검산 예외 ${exc.length}건\n\n`;
     if (exc.length) {
       md += `## 2. 정합성 검산 예외\n`;
       exc.forEach((e, i) => {
