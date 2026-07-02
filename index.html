@@ -69,6 +69,15 @@
       <div><b>4. 종결·보고</b><span>처분수위 · 조서 · 보고</span></div>
     </div>
     <div id="modGrid" class="mod-grid"></div>
+    <h3 class="home-sub">도구</h3>
+    <div class="mod-grid">
+      <button class="mod-card" data-tool="tie"><h3>🧮 정합성 검산기</h3><div class="cnt">결산기준의 "일치해야 함" 등식을 결정론 검산 · 불일치=예외 등록</div></button>
+      <button class="mod-card" data-tool="risk"><h3>🚨 위험 스크리닝</h3><div class="cnt">재정위험 임계값 판정 · 부채중점관리 · 착시 경보</div></button>
+      <button class="mod-card" data-tool="cases"><h3>📚 재무 사례 10,225</h3><div class="cnt">분야축+원문상태 배지 · 감사 길잡이 연계</div></button>
+      <button class="mod-card" data-tool="tree"><h3>⚖️ 처분수위 판단트리</h3><div class="cnt">시정 우선 · 변상 6요건 · 형사연계 임계선</div></button>
+      <button class="mod-card" data-tool="calc"><h3>🖩 계산 워크시트</h3><div class="cnt">감가상각 · 자산평가 MIN/MAX · 정산잔액</div></button>
+      <button class="mod-card" data-tool="report"><h3>📋 감사조서·예외 관리</h3><div class="cnt">응답·예외 집계 → 조서 초안 · 자료요구 목록</div></button>
+    </div>
     <button id="btnConcepts" class="concept-banner">📘 <b>개념 온보딩</b> — 발생주의·중요성·검사위험·3자 일치 등 최소 개념 20선 <span>열기 →</span></button>
     <div class="notice">
       본 도구는 감사 판단을 대신하지 않습니다. 점검 결과는 <b>합리적 확신</b>(절대 확신 아님) 수준이며, 인용 수치·조문은 반드시 원문과 대조하십시오.
@@ -90,10 +99,80 @@
     <div id="conList"></div>
   </section>
 
+  <!-- ═══ 정합성 검산기 ═══ -->
+  <section id="v-tie" hidden>
+    <button class="back" data-go="home">← 모듈 목록</button>
+    <h2 id="tieTitle">정합성 검산기 (cross-tie)</h2>
+    <p class="view-p">결산기준이 "일치해야 함"이라고 정한 등식을 결정론적으로 검산합니다(LLM 아님·항상 재현). <b>불일치 = 즉시 착안점</b> — 예외로 등록해 조서로 넘기십시오. 입력값은 이 PC에만 저장됩니다.</p>
+    <div id="tieList"></div>
+  </section>
+
+  <!-- ═══ 위험 스크리닝 ═══ -->
+  <section id="v-risk" hidden>
+    <button class="back" data-go="home">← 모듈 목록</button>
+    <h2>재무위험 스크리닝</h2>
+    <p class="view-p">임계값은 「지방자치단체 결산 통합기준」 재정위험 판단 지표의 원문 수치입니다. 판정은 <b>감사 우선순위 신호</b>일 뿐 위법·부적정 판단이 아닙니다.</p>
+    <div id="riskWidgets"></div>
+    <div class="note">⚠ <b>착시 경보</b> — 부채비율이 낮아져도 분모 증가(자산재평가·정부출자)가 원인이거나 수익성이 동반 악화면 "건전성 개선"이 아닙니다. 부채비율 하락 ≠ 부채 감소.</div>
+    <details class="gate-cmp"><summary>지표·배점 원문 참조(전체)</summary><div id="riskRef"></div></details>
+  </section>
+
+  <!-- ═══ 사례 ═══ -->
+  <section id="v-cases" hidden>
+    <button class="back" data-go="home">← 모듈 목록</button>
+    <h2>재무 사례 참조</h2>
+    <p class="view-p">감사 길잡이 재무카드 10,225건(분야축 8,382 + 확장 1,843). 원문상태 배지로 검증 가능성을 확인하십시오. 요약카드이므로 금액·법조문 인용 전 원문 대조가 필요합니다.</p>
+    <div class="case-bar">
+      <input type="search" id="caseQ" placeholder="제목 검색 (예: 성과급, 감가상각, 지체상금)">
+      <select id="caseSe"><option value="">전체 계열</option><option>감사원</option><option>화성</option></select>
+      <select id="caseSt"><option value="">전체 원문상태</option><option value="pdf">PDF</option><option value="pdf_conv">변환PDF</option><option value="hwp">HWP만</option><option value="none">미보존</option></select>
+    </div>
+    <div id="caseStats" class="view-p"></div>
+    <div id="caseList"></div>
+    <button id="caseMore" class="btn line" hidden>더 보기 (+100)</button>
+  </section>
+
+  <!-- ═══ 처분수위 판단트리 ═══ -->
+  <section id="v-tree" hidden>
+    <button class="back" data-go="home">← 모듈 목록</button>
+    <h2>처분수위 판단트리</h2>
+    <p class="view-p">발견사항의 <b>검토 방향</b>을 안내합니다 — 처분 확정이 아니며, 처분·지적에는 기준·원문·증빙·반론검토가 필요합니다. <b>시정 우선·변상 최후</b> 원칙 내장.</p>
+    <div id="treeBox"></div>
+  </section>
+
+  <!-- ═══ 계산 워크시트 ═══ -->
+  <section id="v-calc" hidden>
+    <button class="back" data-go="home">← 모듈 목록</button>
+    <h2>계산 워크시트</h2>
+    <p class="view-p">계산 결과는 검토 보조용입니다. 기준 개정 여부와 개별 사안의 특례를 원문으로 확인하십시오.</p>
+    <div id="calcBox"></div>
+  </section>
+
+  <!-- ═══ 감사조서·예외 관리 ═══ -->
+  <section id="v-report" hidden>
+    <button class="back" data-go="home">← 모듈 목록</button>
+    <h2>감사조서·예외 관리</h2>
+    <div id="repSummary"></div>
+    <h3 class="home-sub">예외 항목 관리표</h3>
+    <div id="excTable"></div>
+    <h3 class="home-sub">지적 후보 (체크리스트 "아니오" 응답)</h3>
+    <div id="noList"></div>
+    <div class="btnbar">
+      <button class="btn" id="btnDraft">📋 감사조서 초안 생성</button>
+      <button class="btn line" id="btnDocs">📑 자료요구 목록 생성</button>
+    </div>
+    <textarea id="draftOut" class="draft" hidden spellcheck="false"></textarea>
+    <div class="btnbar" id="draftBar" hidden>
+      <button class="btn line" id="btnCopy">복사</button>
+      <button class="btn line" id="btnDown">다운로드(.md)</button>
+    </div>
+  </section>
+
 </main>
 
 <footer class="ft">재무감사 도우미 · 정적 웹 · 런타임 LLM 0 · 기준 원문 인용 SSoT · <a href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이</a> 자매 도구</footer>
 
 <script src="assets/app.js"></script>
+<script src="assets/tools.js"></script>
 </body>
 </html>

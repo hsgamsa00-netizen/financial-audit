@@ -32,6 +32,9 @@ def log(msg):
         f.write(line + "\n")
 
 
+TIMEOUT = 300
+
+
 def convert_one(name: str) -> tuple[str, str]:
     src = BAI / name
     dst = OUT / (Path(name).stem + ".pdf")
@@ -40,7 +43,7 @@ def convert_one(name: str) -> tuple[str, str]:
     tmp = Path(tempfile.mkdtemp(prefix="hwpconv_"))
     try:
         r = subprocess.run([str(HWP5HTML), "--output", str(tmp / "html"), str(src)],
-                           capture_output=True, timeout=300)
+                           capture_output=True, timeout=TIMEOUT)
         idx = tmp / "html" / "index.xhtml"
         if not idx.exists():
             return name, f"fail(hwp5html rc={r.returncode})"
@@ -48,7 +51,7 @@ def convert_one(name: str) -> tuple[str, str]:
             CHROME, "--headless", "--disable-gpu", "--no-pdf-header-footer",
             f"--user-data-dir={tmp / 'chrome'}",
             f"--print-to-pdf={dst}", idx.as_uri(),
-        ], capture_output=True, timeout=300)
+        ], capture_output=True, timeout=TIMEOUT)
         if dst.exists() and dst.stat().st_size > 10_000:
             return name, "ok"
         return name, f"fail(chrome rc={r2.returncode})"
@@ -61,8 +64,11 @@ def convert_one(name: str) -> tuple[str, str]:
 
 
 def main():
+    global TIMEOUT
     limit = int(sys.argv[sys.argv.index("--limit") + 1]) if "--limit" in sys.argv else None
     workers = int(sys.argv[sys.argv.index("--workers") + 1]) if "--workers" in sys.argv else 3
+    if "--timeout" in sys.argv:
+        TIMEOUT = int(sys.argv[sys.argv.index("--timeout") + 1])
     targets = json.loads((REPO / "data" / "gate_g8_hwp_targets.json").read_text(encoding="utf-8"))
     if limit:
         targets = targets[:limit]

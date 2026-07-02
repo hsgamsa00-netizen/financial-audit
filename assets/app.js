@@ -23,7 +23,7 @@ let CHECKITEMS = [];
 let CONCEPTS = [];
 
 const $ = (sel) => document.querySelector(sel);
-const views = ['gate', 'home', 'check', 'concepts'];
+const views = ['gate', 'home', 'check', 'concepts', 'tie', 'risk', 'cases', 'tree', 'calc', 'report'];
 
 function show(view) {
   views.forEach(v => { $('#v-' + v).hidden = (v !== view); });
@@ -53,11 +53,18 @@ function renderHome() {
   });
 }
 
+function respAll() {
+  try { return JSON.parse(localStorage.getItem('fa_resp:' + S.org) || '{}'); } catch { return {}; }
+}
+function respSave(all) { localStorage.setItem('fa_resp:' + S.org, JSON.stringify(all)); }
+
 function renderCheck(mod) {
   $('#chkTitle').textContent = `${mod} — ${S.org} 점검 착안사항`;
   const list = $('#chkList');
   list.innerHTML = '';
+  const resp = respAll();
   itemsFor(mod).forEach(it => {
+    const r = resp[it.id] || {};
     const d = document.createElement('div');
     d.className = 'chk';
     d.innerHTML = `
@@ -71,7 +78,23 @@ function renderCheck(mod) {
       ${it.판정규칙 ? `<div class="rule">판정: ${esc(it.판정규칙)}</div>` : ''}
       ${it.근거조문 ? `<div class="quote">${esc(it.근거조문)}</div>` : ''}
       ${it.red_flag ? `<div class="flag">🚩 ${esc(it.red_flag)}</div>` : ''}
-      ${(it.필요서류 || []).length ? `<div class="docs">📄 필요서류: ${(it.필요서류 || []).map(esc).join(' · ')}</div>` : ''}`;
+      ${(it.필요서류 || []).length ? `<div class="docs">📄 필요서류: ${(it.필요서류 || []).map(esc).join(' · ')}</div>` : ''}
+      <div class="ans-row">
+        ${['예', '아니오', '해당없음'].map(a =>
+          `<label class="rad"><input type="radio" name="a_${esc(it.id)}" value="${a}" ${r.a === a ? 'checked' : ''}>${a === '아니오' ? '아니오(지적 후보)' : a}</label>`).join('')}
+        <input type="text" class="doc-in" placeholder="확인한 근거서류" value="${esc(r.doc || '')}">
+      </div>`;
+    d.querySelectorAll(`input[name="a_${it.id}"]`).forEach(x =>
+      x.addEventListener('change', () => {
+        const all = respAll();
+        all[it.id] = { ...(all[it.id] || {}), a: x.value };
+        respSave(all);
+      }));
+    d.querySelector('.doc-in').addEventListener('change', (e) => {
+      const all = respAll();
+      all[it.id] = { ...(all[it.id] || {}), doc: e.target.value };
+      respSave(all);
+    });
     list.appendChild(d);
   });
   show('check');
@@ -122,6 +145,17 @@ document.querySelectorAll('.lvl button').forEach(b =>
 document.querySelectorAll('.back').forEach(b =>
   b.addEventListener('click', () => show('home')));
 $('#btnConcepts').addEventListener('click', () => renderConcepts(''));
+document.querySelectorAll('[data-tool]').forEach(b =>
+  b.addEventListener('click', () => window.FA_TOOLS && window.FA_TOOLS.open(b.dataset.tool)));
+
+/* tools.js 공유 인터페이스 */
+window.FA = {
+  get S() { return S; },
+  esc, show,
+  items: () => CHECKITEMS,
+  itemsFor,
+  respAll,
+};
 
 /* ── 초기화 ── */
 Promise.all([

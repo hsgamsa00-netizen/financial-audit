@@ -21,7 +21,8 @@ DATA = REPO / "data"
 PATHS = json.loads((HERE / "local_paths.json").read_text(encoding="utf-8"))
 
 # 원문상태 우선순위(높을수록 우선): 같은 srno에 여러 파일이 있으면 최고 상태를 취한다.
-STATUS_PRIORITY = {"pdf": 4, "hwp": 3, "zip": 2, "csd": 1}
+# pdf_conv = HWP에서 배치 변환한 열람용 PDF(변환본 — 페이지 번호가 원본과 다를 수 있음)
+STATUS_PRIORITY = {"pdf": 5, "pdf_conv": 4, "hwp": 3, "zip": 2, "csd": 1}
 EXT_STATUS = {".pdf": "pdf", ".hwp": "hwp", ".hwpx": "hwp", ".bin": "csd", ".zip": "zip"}
 
 # 재무카드 선별 1차 축 = 분야_통합 4종(최종설계안 §1.2-3, 실측값과 일치 확인)
@@ -74,6 +75,18 @@ def scan_sources():
         atype = m.group("atype") if m else ""
         aname = m.group("title") if m else p.stem
         add("감사원", "BAI", p, srno, year, atype, aname, status)
+
+    conv = Path(PATHS.get("BAI_CONV", ""))
+    if conv.is_dir():
+        for p in sorted(conv.iterdir()):
+            if not p.is_file() or p.suffix.lower() != ".pdf":
+                continue
+            m = BAI_NAME_RE.match(p.stem)
+            add("감사원", "BAI_CONV", p,
+                m.group("srno") if m else "",
+                m.group("date")[:4] if m else "",
+                m.group("atype") if m else "", m.group("title") if m else p.stem,
+                "pdf_conv")
 
     hws = Path(PATHS["HWASEONG"])
     for p in sorted(hws.iterdir()):
