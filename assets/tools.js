@@ -155,7 +155,31 @@
     w.innerHTML = `<div class="chk"><div class="q">재정위험 판단 지표 (주의/심각)</div><div class="meta"><span class="b b-ev">기준 직접근거</span><span class="b b-lvl">지자체 결산 통합기준</span></div><div class="risk-grid">${
       RISK6.map((r, i) => `<div class="fld"><label>${esc(r.nm)}</label><input data-risk="${i}" inputmode="decimal" aria-label="${esc(r.nm)}"><span class="risk-v" data-rv="${i}"></span><span class="risk-th">주의 ${r.warn}% ${r.dir === 'over' ? '초과' : '미만'} · 심각 ${r.grave}% ${r.dir === 'over' ? '초과' : '미만'}</span></div>`).join('')
     }</div></div>
-    <div class="chk"><div class="q">공기업 부채비율 관리기준</div><div class="rule">200% 이상=집중관리 · 100–200%=억제관리 · 100% 미만=상시 모니터링 (감사연구원 2021)</div></div>`;
+    <div class="chk"><div class="q">공기업 부채비율 관리기준</div><div class="rule">200% 이상=집중관리 · 100–200%=억제관리 · 100% 미만=상시 모니터링 (감사연구원 2021)</div></div>
+    <div class="chk"><div class="q">위험기반 감사 위젯 — AR = IR × CR × DR</div>
+      <div class="meta"><span class="b b-lvl">감사연구원 2013 위험분석 연구</span><span class="b b-lvl">개념 교보재</span></div>
+      <div class="rule">고유위험(IR)·통제위험(CR)은 평가 대상이고, 감사자가 조절할 수 있는 유일한 위험은 <b>적발위험(DR)</b>입니다. IR·CR이 높게 평가될수록 DR을 낮춰야 하므로 증거량과 투입시간이 늘어납니다.</div>
+      <div class="risk-grid">
+        <div class="fld"><label>고유위험(IR) — 계정 성격상 왜곡 가능성</label>
+          <select data-ar="ir" aria-label="고유위험"><option value="0.4">낮음 (단순·현금주의성 계정)</option><option value="0.7" selected>중간</option><option value="1">높음 (평가·추정 계정: 충당부채·감가상각·건설가계정)</option></select></div>
+        <div class="fld"><label>통제위험(CR) — 내부통제가 못 거를 가능성</label>
+          <select data-ar="cr" aria-label="통제위험"><option value="0.4">낮음 (분리·대사·전산통제 양호)</option><option value="0.7" selected>중간</option><option value="1">높음 (회계직 미분리·비밀번호 공유·장기보직)</option></select></div>
+      </div>
+      <div class="rule" data-ar-out></div>
+    </div>`;
+    const arOut = w.querySelector('[data-ar-out]');
+    const arCalc = () => {
+      const ir = parseFloat(w.querySelector('[data-ar="ir"]').value);
+      const cr = parseFloat(w.querySelector('[data-ar="cr"]').value);
+      const dr = 0.05 / (ir * cr); // 목표 AR 5% 기준의 상대 수준(교보재용 정성 밴드)
+      let band, guide;
+      if (dr <= 0.08) { band = '매우 낮게'; guide = '표본 대폭 확대 또는 전수검사 검토 · 외부확인·실사 등 강한 증거 위주 · 투입시간 최대'; }
+      else if (dr <= 0.15) { band = '낮게'; guide = '표본 확대 · 실증절차 비중 확대 · 분석적 절차만으로 종결 금지'; }
+      else { band = '표준 수준'; guide = '표준 표본 · 분석적 절차와 세부테스트 병행'; }
+      arOut.innerHTML = `→ 적발위험(DR)을 <b>${band}</b> 유지해야 합니다. ${guide}. <span class="risk-th">※ 우선순위 안내이며 표본 수를 확정하는 계산이 아닙니다.</span>`;
+    };
+    w.querySelectorAll('[data-ar]').forEach(s => s.addEventListener('change', arCalc));
+    arCalc();
     w.querySelectorAll('input[data-risk]').forEach(x => x.addEventListener('input', () => {
       const r = RISK6[+x.dataset.risk];
       const v = num(x.value);

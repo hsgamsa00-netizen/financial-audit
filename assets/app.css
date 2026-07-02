@@ -59,6 +59,7 @@ table.cmp th{background:var(--soft);white-space:nowrap}
 .doc-in{flex:1;min-width:200px;border:1px solid var(--line);border-radius:var(--r-btn);padding:7px 10px;font-size:var(--text-sm);font-family:inherit}
 .fld label{display:block;font-size:var(--text-meta);color:var(--muted);margin-bottom:3px}
 .fld input{width:100%;border:1px solid var(--line);border-radius:var(--r-btn);padding:8px 10px;font-size:var(--text-body);text-align:right;font-family:inherit;box-sizing:border-box}
+.fld select{width:100%;border:1px solid var(--line);border-radius:var(--r-btn);padding:8px;font-size:var(--text-sm);font-family:inherit;background:var(--card);box-sizing:border-box}
 .btnbar{display:flex;gap:10px;margin-top:var(--space-4);flex-wrap:wrap}
 .btn{border:0;background:var(--accent);color:#fff;font-weight:700;border-radius:var(--r-btn);padding:9px 18px;font-size:var(--text-sm);cursor:pointer;font-family:inherit}
 .btn.line{background:var(--card);color:var(--accent);border:1px solid var(--accent)}
