@@ -3,7 +3,7 @@
 .hd-title{font-size:var(--text-h3);font-weight:700;color:var(--accent)}
 .hd-sub{font-size:var(--text-meta);color:var(--muted);font-weight:400;margin-left:8px}
 .hd-right{margin-left:auto;display:flex;gap:10px;align-items:center}
-.org-chip{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);border-radius:999px;padding:4px 14px;font-weight:700;font-size:var(--text-sm);cursor:pointer}
+.org-chip{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);border-radius:999px;padding:4px 14px;font-weight:700;font-size:var(--text-sm);cursor:pointer;font-family:inherit}
 .lvl{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .lvl button{border:0;background:var(--card);padding:5px 14px;font-size:var(--text-meta);cursor:pointer;color:var(--muted);font-family:inherit}
 .lvl button.on{background:var(--accent);color:#fff;font-weight:700}
@@ -22,7 +22,7 @@ main{max-width:1020px;margin:0 auto;padding:var(--space-5) var(--space-4)}
 .gc-row{color:var(--muted);line-height:var(--leading-tight)}
 .gc-row em{font-style:normal;font-weight:700;color:var(--ink)}
 .gc-trap{margin-top:4px;font-size:var(--text-meta);color:var(--bad);background:var(--bad-soft);border-radius:var(--r-chip);padding:5px 8px}
-.gate-cmp{margin:var(--space-5) 0 var(--space-3)}
+.gate-cmp{margin:var(--space-5) 0 var(--space-3);overflow-x:auto}
 .gate-cmp summary{cursor:pointer;color:var(--accent);font-weight:700;font-size:var(--text-sm)}
 table.cmp{width:100%;border-collapse:collapse;font-size:var(--text-sm);margin-top:var(--space-3);background:var(--card)}
 table.cmp th,table.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
@@ -98,7 +98,9 @@ table.cmp th{background:var(--soft);white-space:nowrap}
 .st-none{background:var(--src-none-soft);color:var(--src-none)}
 
 /* 조서·예외 */
-table.xt{width:100%;border-collapse:collapse;font-size:var(--text-sm);background:var(--card)}
+#excTable{overflow-x:auto}
+table.xt{width:100%;min-width:640px;border-collapse:collapse;font-size:var(--text-sm);background:var(--card)}
+table.cmp{min-width:560px}
 table.xt th,table.xt td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
 table.xt th{background:var(--soft);font-size:var(--text-meta)}
 table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--r-chip);padding:4px 6px;font-size:var(--text-meta);font-family:inherit;width:100%;box-sizing:border-box}

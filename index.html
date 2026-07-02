@@ -11,7 +11,7 @@
 <header class="hd">
   <div class="hd-title">재무감사 도우미 <span class="hd-sub">초심 감사자용 재무회계 점검 안내</span></div>
   <div class="hd-right">
-    <span id="orgChip" class="org-chip" hidden></span>
+    <button id="orgChip" class="org-chip" hidden></button>
     <span id="lvlWrap" class="lvl" hidden>
       <button data-lvl="진입" class="on">진입</button><button data-lvl="심화">심화</button>
     </span>
@@ -22,6 +22,7 @@
 
   <!-- ═══ 진입: 기관유형 3분기 (강제) ═══ -->
   <section id="v-gate">
+    <button id="gateBack" class="back" hidden>← 변경 취소하고 돌아가기</button>
     <h1 class="gate-h">어느 기관을 감사하십니까?</h1>
     <p class="gate-p">기관유형에 따라 대조할 회계기준·재무제표·점검항목이 완전히 달라집니다. <b>유형을 먼저 확정</b>해야 잘못된 기준 적용을 막을 수 있습니다.</p>
     <div class="gate-grid">
@@ -123,9 +124,9 @@
     <h2>재무 사례 참조</h2>
     <p class="view-p">감사 길잡이 재무카드 10,225건(분야축 8,382 + 확장 1,843). 원문상태 배지로 검증 가능성을 확인하십시오. 요약카드이므로 금액·법조문 인용 전 원문 대조가 필요합니다.</p>
     <div class="case-bar">
-      <input type="search" id="caseQ" placeholder="제목 검색 (예: 성과급, 감가상각, 지체상금)">
-      <select id="caseSe"><option value="">전체 계열</option><option>감사원</option><option>화성</option></select>
-      <select id="caseSt"><option value="">전체 원문상태</option><option value="pdf">PDF</option><option value="pdf_conv">변환PDF</option><option value="hwp">HWP만</option><option value="none">미보존</option></select>
+      <input type="search" id="caseQ" aria-label="사례 제목 검색" placeholder="제목 검색 (예: 성과급, 감가상각, 지체상금)">
+      <select id="caseSe" aria-label="사례 계열 필터"><option value="">전체 계열</option><option>감사원</option><option>화성</option></select>
+      <select id="caseSt" aria-label="원문상태 필터"><option value="">전체 원문상태</option><option value="pdf">PDF</option><option value="pdf_conv">변환PDF</option><option value="hwp">HWP만</option><option value="none">미보존</option></select>
     </div>
     <div id="caseStats" class="view-p"></div>
     <div id="caseList"></div>
@@ -161,7 +162,7 @@
       <button class="btn" id="btnDraft">📋 감사조서 초안 생성</button>
       <button class="btn line" id="btnDocs">📑 자료요구 목록 생성</button>
     </div>
-    <textarea id="draftOut" class="draft" hidden spellcheck="false"></textarea>
+    <textarea id="draftOut" class="draft" hidden spellcheck="false" aria-label="생성된 초안"></textarea>
     <div class="btnbar" id="draftBar" hidden>
       <button class="btn line" id="btnCopy">복사</button>
       <button class="btn line" id="btnDown">다운로드(.md)</button>

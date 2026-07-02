@@ -24,13 +24,36 @@ let CONCEPTS = [];
 
 const $ = (sel) => document.querySelector(sel);
 const views = ['gate', 'home', 'check', 'concepts', 'tie', 'risk', 'cases', 'tree', 'calc', 'report'];
+let curMod = '';        // 현재 열려 있는 체크리스트 모듈
+let navByHash = false;  // hashchange 유래 전환(중복 push 방지)
+
+function curView() { return views.find(v => !$('#v-' + v).hidden); }
 
 function show(view) {
   views.forEach(v => { $('#v-' + v).hidden = (v !== view); });
   $('#orgChip').hidden = !S.org;
   $('#lvlWrap').hidden = !S.org;
+  $('#gateBack').hidden = !(view === 'gate' && S.org);
   if (S.org) $('#orgChip').textContent = '🏛 ' + S.org + ' (변경)';
+  if (!navByHash && location.hash !== '#' + view) location.hash = view; // 뒤로가기 지원
   window.scrollTo(0, 0);
+}
+
+/* 해시 → 뷰 (브라우저 뒤로/앞으로) */
+window.addEventListener('hashchange', () => {
+  const v = location.hash.slice(1);
+  if (!views.includes(v) || v === curView()) return;
+  navByHash = true;
+  try { openView(v); } finally { navByHash = false; }
+});
+
+function openView(v) {
+  if (v === 'gate') { show('gate'); return; }
+  if (!S.org) { show('gate'); return; }
+  if (v === 'home') { renderHome(); show('home'); }
+  else if (v === 'check') { curMod ? renderCheck(curMod) : (renderHome(), show('home')); }
+  else if (v === 'concepts') { renderConcepts(''); }
+  else if (window.FA_TOOLS) { window.FA_TOOLS.open(v); }
 }
 
 function itemsFor(mod) {
@@ -59,6 +82,7 @@ function respAll() {
 function respSave(all) { localStorage.setItem('fa_resp:' + S.org, JSON.stringify(all)); }
 
 function renderCheck(mod) {
+  curMod = mod;
   $('#chkTitle').textContent = `${mod} — ${S.org} 점검 착안사항`;
   const list = $('#chkList');
   list.innerHTML = '';
@@ -85,9 +109,15 @@ function renderCheck(mod) {
         <input type="text" class="doc-in" placeholder="확인한 근거서류" value="${esc(r.doc || '')}">
       </div>`;
     d.querySelectorAll(`input[name="a_${it.id}"]`).forEach(x =>
-      x.addEventListener('change', () => {
+      x.addEventListener('click', () => {
         const all = respAll();
-        all[it.id] = { ...(all[it.id] || {}), a: x.value };
+        if ((all[it.id] || {}).a === x.value) {
+          // 같은 값 재클릭 = 응답 해제(오클릭한 '아니오'가 지적 후보에 남는 것 방지)
+          x.checked = false;
+          all[it.id] = { ...(all[it.id] || {}), a: '' };
+        } else {
+          all[it.id] = { ...(all[it.id] || {}), a: x.value };
+        }
         respSave(all);
       }));
     d.querySelector('.doc-in').addEventListener('change', (e) => {
@@ -135,12 +165,13 @@ function esc(s) {
 document.querySelectorAll('.gate-card').forEach(b =>
   b.addEventListener('click', () => { S.org = b.dataset.org; renderHome(); show('home'); }));
 $('#orgChip').addEventListener('click', () => show('gate'));
+$('#gateBack').addEventListener('click', () => { renderHome(); show('home'); });
 document.querySelectorAll('.lvl button').forEach(b =>
   b.addEventListener('click', () => {
     S.lvl = b.dataset.lvl;
     document.querySelectorAll('.lvl button').forEach(x => x.classList.toggle('on', x === b));
-    if (!$('#v-home').hidden) renderHome();
-    else if (!$('#v-check').hidden) { renderHome(); show('home'); }
+    renderHome();
+    if (!$('#v-check').hidden && curMod) renderCheck(curMod); // 보던 모듈 유지한 채 갱신
   }));
 document.querySelectorAll('.back').forEach(b =>
   b.addEventListener('click', () => show('home')));
@@ -159,11 +190,23 @@ window.FA = {
 
 /* ── 초기화 ── */
 Promise.all([
-  fetch('data/checkitems.json').then(r => r.ok ? r.json() : []).catch(() => []),
-  fetch('data/concepts.json').then(r => r.ok ? r.json() : []).catch(() => []),
+  fetch('data/checkitems.json').then(r => r.ok ? r.json() : null).catch(() => null),
+  fetch('data/concepts.json').then(r => r.ok ? r.json() : null).catch(() => null),
 ]).then(([items, concepts]) => {
+  const failed = items === null;
   CHECKITEMS = Array.isArray(items) ? items : [];
   CONCEPTS = Array.isArray(concepts) ? concepts : [];
   document.querySelectorAll('.lvl button').forEach(x => x.classList.toggle('on', x.dataset.lvl === S.lvl));
-  if (S.org) { renderHome(); show('home'); } else { show('gate'); }
+  if (failed) {
+    const n = document.createElement('div');
+    n.className = 'note danger';
+    n.textContent = '⚠ 점검표 데이터를 불러오지 못했습니다. 네트워크 확인 후 새로고침하십시오.';
+    $('#v-home').prepend(n);
+  }
+  const cur = curView();
+  if (cur && cur !== 'gate') { renderHome(); return; } // 사용자가 이미 다른 뷰에 있으면 강제 이동 금지
+  const h = location.hash.slice(1);
+  if (S.org && views.includes(h) && h !== 'gate') { renderHome(); openView(h); }
+  else if (S.org) { renderHome(); show('home'); }
+  else { show('gate'); }
 });

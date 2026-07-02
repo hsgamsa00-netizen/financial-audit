@@ -6,14 +6,18 @@
   const $ = (s) => document.querySelector(s);
   const orgOf = () => window.FA.S.org;
 
-  /* ── 지연 로딩 데이터 ── */
+  /* ── 지연 로딩 데이터 (실패는 캐시하지 않음 → 재진입 시 재시도) ── */
   const cache = {};
   async function load(name) {
     if (cache[name]) return cache[name];
-    const r = await fetch('data/' + name).catch(() => null);
-    cache[name] = (r && r.ok) ? await r.json() : [];
-    return cache[name];
+    try {
+      const r = await fetch('data/' + name);
+      if (!r.ok) return null;
+      cache[name] = await r.json();
+      return cache[name];
+    } catch { return null; }
   }
+  const LOAD_FAIL = '<div class="chk">⚠ 데이터를 불러오지 못했습니다. 네트워크 확인 후 다시 열어 주십시오.</div>';
 
   /* ── 예외 항목 관리(localStorage) ── */
   function excAll() {
@@ -26,22 +30,45 @@
     excSave(list);
   }
 
+  // 클립보드: 비보안 컨텍스트(내부망 http)에서도 동작하도록 폴백
+  async function copyText(t) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(t); return true; }
+    } catch { /* 폴백으로 */ }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove(); return ok;
+    } catch { return false; }
+  }
+
   const fmt = (n) => (isFinite(n) ? Math.round(n).toLocaleString('ko-KR') : '-');
-  const num = (v) => parseFloat(String(v || '').replace(/[^0-9.-]/g, '')) || 0;
+  // 한국 회계 관행 음수 표기(△, 괄호)를 음수로 정규화
+  const num = (v) => {
+    let s = String(v || '').trim();
+    let neg = false;
+    if (/^[△▲(]/.test(s)) { neg = true; s = s.replace(/^[△▲(]/, '').replace(/\)$/, ''); }
+    const n = parseFloat(s.replace(/[^0-9.-]/g, '')) || 0;
+    return neg ? -Math.abs(n) : n;
+  };
 
   /* ═══ 검산기 ═══ */
   async function renderTie() {
-    const rules = (await load('tie_rules.json')).filter(r => r.기관유형 === orgOf());
-    $('#tieTitle').textContent = `정합성 검산기 (cross-tie) — ${orgOf()} ${rules.length}종`;
+    const data = await load('tie_rules.json');
     const box = $('#tieList');
+    if (!data) { $('#tieTitle').textContent = '정합성 검산기 (cross-tie)'; box.innerHTML = LOAD_FAIL; show('tie'); return; }
+    const rules = data.filter(r => r.기관유형 === orgOf());
+    $('#tieTitle').textContent = `정합성 검산기 (cross-tie) — ${orgOf()} ${rules.length}종`;
     box.innerHTML = rules.length ? '' : '<div class="chk">이 기관유형의 등식형 검산규칙이 없습니다.</div>';
     rules.forEach(r => {
       const d = document.createElement('div');
       d.className = 'chk';
-      const inp = (side, i, nm) => `<div class="fld"><label>${esc(nm)} (원)</label><input data-side="${side}" data-i="${i}" inputmode="numeric"></div>`;
+      const inp = (side, i, nm) => `<div class="fld"><label>${esc(nm)} (원)</label><input data-side="${side}" data-i="${i}" inputmode="numeric" aria-label="${esc(nm)}"></div>`;
       d.innerHTML = `
         <div class="q">${esc(r.이름)}</div>
-        <div class="meta"><span class="b b-ev">기준 직접근거</span><span class="b b-lvl">${esc(r.출처파일.replace('.txt', ''))}</span></div>
+        <div class="meta"><span class="b b-ev">기준 직접근거</span><span class="b b-lvl">${esc(r.출처파일.replace('.txt', '').replace(/\s*\(\d+\)$/, ''))}</span></div>
         <div class="quote">${esc(r.근거조문)}</div>
         <div class="tie-grid">
           <div class="tie-side">${r.좌변.map((nm, i) => inp('L', i, nm)).join('')}</div>
@@ -56,10 +83,12 @@
         const sum = (side) => [...d.querySelectorAll(`input[data-side="${side}"]`)].reduce((s, x) => s + num(x.value), 0);
         const touched = [...d.querySelectorAll('input[data-side]')].some(x => x.value.trim());
         const v = d.querySelector('[data-v]'); const eb = d.querySelector('[data-exc]');
+        // 입력이 바뀌면 등록 버튼을 새 상태로 리셋(직전 등록 잔존 방지)
+        eb.disabled = false; eb.textContent = '🚩 예외로 등록';
         if (!touched) { v.hidden = true; eb.hidden = true; return; }
         const diff = sum('L') - sum('R');
         v.hidden = false;
-        if (diff === 0) { v.className = 'verdict ok'; v.textContent = '✓ 일치'; eb.hidden = true; }
+        if (Math.abs(diff) < 0.5) { v.className = 'verdict ok'; v.textContent = '✓ 일치'; eb.hidden = true; }
         else {
           v.className = 'verdict bad';
           v.textContent = `✗ 불일치 ${diff > 0 ? '+' : '−'}${fmt(Math.abs(diff))}원 · 조정내역 설명 요구`;
@@ -88,8 +117,9 @@
   async function renderRisk() {
     const refs = await load('risk_rules.json');
     const w = $('#riskWidgets');
+    if (!refs) { w.innerHTML = LOAD_FAIL; $('#riskRef').innerHTML = ''; show('risk'); return; }
     w.innerHTML = `<div class="chk"><div class="q">재정위험 판단 지표 (주의/심각)</div><div class="meta"><span class="b b-ev">기준 직접근거</span><span class="b b-lvl">지자체 결산 통합기준</span></div><div class="risk-grid">${
-      RISK6.map((r, i) => `<div class="fld"><label>${esc(r.nm)}</label><input data-risk="${i}" inputmode="decimal"><span class="risk-v" data-rv="${i}"></span><span class="risk-th">주의 ${r.warn}${r.dir === 'over' ? '↑' : '↓'} · 심각 ${r.grave}${r.dir === 'over' ? '↑' : '↓'}</span></div>`).join('')
+      RISK6.map((r, i) => `<div class="fld"><label>${esc(r.nm)}</label><input data-risk="${i}" inputmode="decimal" aria-label="${esc(r.nm)}"><span class="risk-v" data-rv="${i}"></span><span class="risk-th">주의 ${r.warn}% ${r.dir === 'over' ? '초과' : '미만'} · 심각 ${r.grave}% ${r.dir === 'over' ? '초과' : '미만'}</span></div>`).join('')
     }</div></div>
     <div class="chk"><div class="q">공기업 부채비율 관리기준</div><div class="rule">200% 이상=집중관리 · 100–200%=억제관리 · 100% 미만=상시 모니터링 (감사연구원 2021)</div></div>`;
     w.querySelectorAll('input[data-risk]').forEach(x => x.addEventListener('input', () => {
@@ -97,8 +127,9 @@
       const v = num(x.value);
       const el = w.querySelector(`[data-rv="${x.dataset.risk}"]`);
       if (!x.value.trim()) { el.textContent = ''; return; }
-      const bad = r.dir === 'over' ? v >= r.grave : v <= r.grave;
-      const warn = r.dir === 'over' ? v >= r.warn : v <= r.warn;
+      // 원문 부등호 그대로: 초과(>)·미만(<) — 경계값은 하위 단계
+      const bad = r.dir === 'over' ? v > r.grave : v < r.grave;
+      const warn = r.dir === 'over' ? v > r.warn : v < r.warn;
       el.className = 'risk-v ' + (bad ? 'rv-bad' : warn ? 'rv-warn' : 'rv-ok');
       el.textContent = bad ? '심각' : warn ? '주의' : '정상';
     }));
@@ -111,9 +142,14 @@
   const ST_BADGE = { pdf: ['PDF', 'st-pdf'], pdf_conv: ['변환PDF', 'st-conv'], hwp: ['HWP만', 'st-hwp'], csd: ['CSD-DRM', 'st-csd'], none: ['미보존·주의', 'st-none'] };
   let caseView = { list: [], shown: 0 };
   async function renderCases() {
-    await load('cases_fin.json');
-    filterCases();
     show('cases');
+    if (!cache['cases_fin.json']) {
+      $('#caseStats').textContent = '사례 데이터 불러오는 중… (2.3MB · 최초 1회)';
+      $('#caseList').innerHTML = '';
+    }
+    const data = await load('cases_fin.json');
+    if (!data) { $('#caseStats').textContent = ''; $('#caseList').innerHTML = LOAD_FAIL; return; }
+    filterCases();
   }
   function filterCases() {
     const all = cache['cases_fin.json'] || [];
@@ -139,7 +175,7 @@
         <div class="meta">${(c.b || []).map(b => `<span class="b b-area">${esc(b)}</span>`).join('')}${(c.d || []).map(x => `<span class="b b-lvl">${esc(x)}</span>`).join('')}<span class="b ${cls}">${lb}</span></div>
         <div class="chips"><button class="chip" data-copy>제목 복사</button><a class="chip" href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이에서 검색 ↗</a></div>`;
       d.querySelector('[data-copy]').addEventListener('click', (e) => {
-        navigator.clipboard.writeText(c.t).then(() => { e.target.textContent = '✓ 복사됨'; });
+        copyText(c.t).then(ok => { e.target.textContent = ok ? '✓ 복사됨' : '복사 실패'; });
       });
       box.appendChild(d);
     });
@@ -215,8 +251,9 @@
     });
     on(['c2a', 'c2b', 'c2c', 'c2d'], () => {
       const parts = [];
-      if ($('#c2a').value || $('#c2b').value) parts.push(`재고 평가액 = MIN → ${fmt(Math.min(num($('#c2a').value), num($('#c2b').value)))}원`);
-      if ($('#c2c').value || $('#c2d').value) parts.push(`토지 평가액 = MAX → ${fmt(Math.max(num($('#c2c').value), num($('#c2d').value)))}원`);
+      // 두 값이 모두 있어야 계산(한쪽만 입력 시 0과 비교하는 오류 방지)
+      if ($('#c2a').value.trim() && $('#c2b').value.trim()) parts.push(`재고 평가액 = MIN → ${fmt(Math.min(num($('#c2a').value), num($('#c2b').value)))}원`);
+      if ($('#c2c').value.trim() && $('#c2d').value.trim()) parts.push(`토지 평가액 = MAX → ${fmt(Math.max(num($('#c2c').value), num($('#c2d').value)))}원`);
       $('#c2o').textContent = parts.join(' · ');
     });
     on(['c3a', 'c3b', 'c3c'], () => {
@@ -227,8 +264,14 @@
   }
 
   /* ═══ 감사조서·예외 관리 ═══ */
+  // 분모는 체크리스트 화면과 동일 기준(기관유형+난이도 필터)
+  function scopedItems() {
+    const lvl = window.FA.S.lvl;
+    return window.FA.items().filter(it =>
+      (it.기관유형 || []).includes(orgOf()) && (lvl === '심화' || it.난이도 !== '심화'));
+  }
   function renderReport() {
-    const items = window.FA.items().filter(it => (it.기관유형 || []).includes(orgOf()));
+    const items = scopedItems();
     const resp = window.FA.respAll();
     const answered = Object.keys(resp).filter(id => resp[id].a);
     const nos = items.filter(it => resp[it.id] && resp[it.id].a === '아니오');
@@ -255,7 +298,7 @@
   }
 
   function makeDraft() {
-    const items = window.FA.items().filter(it => (it.기관유형 || []).includes(orgOf()));
+    const items = scopedItems();
     const resp = window.FA.respAll();
     const nos = items.filter(it => resp[it.id] && resp[it.id].a === '아니오');
     const exc = excAll();
@@ -282,7 +325,7 @@
   }
 
   function makeDocs() {
-    const items = window.FA.items().filter(it => (it.기관유형 || []).includes(orgOf()));
+    const items = scopedItems();
     const docs = new Set();
     items.forEach(it => (it.필요서류 || []).forEach(x => docs.add(x)));
     const out = $('#draftOut');
@@ -303,7 +346,7 @@
   $('#caseMore').addEventListener('click', moreCases);
   $('#btnDraft').addEventListener('click', makeDraft);
   $('#btnDocs').addEventListener('click', makeDocs);
-  $('#btnCopy').addEventListener('click', () => navigator.clipboard.writeText($('#draftOut').value));
+  $('#btnCopy').addEventListener('click', (e) => copyText($('#draftOut').value).then(ok => { e.target.textContent = ok ? '✓ 복사됨' : '복사 실패'; }));
   $('#btnDown').addEventListener('click', () => {
     const blob = new Blob([$('#draftOut').value], { type: 'text/markdown' });
     const a = document.createElement('a');
