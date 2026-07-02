@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>재무감사 도우미</title>
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<header class="hd">
+  <div class="hd-title">재무감사 도우미 <span class="hd-sub">초심 감사자용 재무회계 점검 안내</span></div>
+  <div class="hd-right">
+    <span id="orgChip" class="org-chip" hidden></span>
+    <span id="lvlWrap" class="lvl" hidden>
+      <button data-lvl="진입" class="on">진입</button><button data-lvl="심화">심화</button>
+    </span>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- ═══ 진입: 기관유형 3분기 (강제) ═══ -->
+  <section id="v-gate">
+    <h1 class="gate-h">어느 기관을 감사하십니까?</h1>
+    <p class="gate-p">기관유형에 따라 대조할 회계기준·재무제표·점검항목이 완전히 달라집니다. <b>유형을 먼저 확정</b>해야 잘못된 기준 적용을 막을 수 있습니다.</p>
+    <div class="gate-grid">
+      <button class="gate-card" data-org="지자체">
+        <b>지자체 일반회계</b>
+        <span class="gc-row">지방회계법 · 지자체 회계기준규칙</span>
+        <span class="gc-row">예산회계(현금주의) + 재무회계(발생주의) <em>이원화</em></span>
+        <span class="gc-row">재정상태표 · 재정운영표 · 순자산변동표 · 주석</span>
+        <span class="gc-trap">함정: 두 결산은 「차이 명세서」로 이어져야 함</span>
+      </button>
+      <button class="gate-card" data-org="지방공기업">
+        <b>지방공기업</b>
+        <span class="gc-row">지방공기업법 · 2025사업연도 결산기준</span>
+        <span class="gc-row">발생주의 · 복식부기(일반기업회계기준 준용)</span>
+        <span class="gc-row">재무상태표 · 손익계산서 · 현금흐름표 · 자본변동표 · 주석</span>
+        <span class="gc-trap">함정: 지방공기업특별회계는 지자체 회계기준 미적용</span>
+      </button>
+      <button class="gate-card" data-org="출자·출연기관">
+        <b>지방출자·출연기관</b>
+        <span class="gc-row">지방출자출연법 §19 · 2025사업연도 결산기준</span>
+        <span class="gc-row">발생주의 기업회계(유형별 기준 상이)</span>
+        <span class="gc-row">재무상태표 · 손익(운영성과)표 · 자본(순자산)변동표 · 주석</span>
+        <span class="gc-trap">함정: 출자=일반기업회계 / 출연=공익법인회계 / 의료원 등 별도</span>
+      </button>
+    </div>
+    <details class="gate-cmp">
+      <summary>3체계 비교표 전체 보기</summary>
+      <table class="cmp">
+        <tr><th></th><th>① 지자체 일반회계</th><th>② 지방공기업</th><th>③ 출자·출연기관</th></tr>
+        <tr><th>근거</th><td>지방회계법·지자체 회계기준규칙</td><td>지방공기업법</td><td>지방출자출연법 §19</td></tr>
+        <tr><th>회계방식</th><td>예산회계(현금주의)+재무회계(발생주의) 이원화</td><td>발생주의·복식(일반기업회계기준)</td><td>발생주의 기업회계(유형별 기준)</td></tr>
+        <tr><th>적용기준</th><td>지자체 회계기준규칙</td><td>일반기업회계기준 준용</td><td>출자=일반기업회계 / 출연 일반=공익법인회계 / 의료원=의료기관회계 / 테크노파크=산업기술단지 규정</td></tr>
+        <tr><th>함정</th><td>예산↔재무 "차이 명세서" 필수</td><td>지방회계기준 미적용(별도체계)</td><td>유형 오판 시 기준 전체 오적용</td></tr>
+      </table>
+    </details>
+    <p class="gate-note">🧭 어떤 유형이든 최종 점검은 ① 재무제표 적정성 ② 내부통제 효과성 ③ 합법성 — <b>3요소 점검틀</b>로 집계됩니다.</p>
+  </section>
+
+  <!-- ═══ 홈: 5모듈 ═══ -->
+  <section id="v-home" hidden>
+    <div class="steps">
+      <div><b>1. 계획</b><span>위험평가 · 중요성 · 표본</span></div>
+      <div><b>2. 통제·거래테스트</b><span>내부통제 · 증빙 대사</span></div>
+      <div><b>3. 분석·잔액테스트</b><span>검산 · 비율분석 · 실사</span></div>
+      <div><b>4. 종결·보고</b><span>처분수위 · 조서 · 보고</span></div>
+    </div>
+    <div id="modGrid" class="mod-grid"></div>
+    <button id="btnConcepts" class="concept-banner">📘 <b>개념 온보딩</b> — 발생주의·중요성·검사위험·3자 일치 등 최소 개념 20선 <span>열기 →</span></button>
+    <div class="notice">
+      본 도구는 감사 판단을 대신하지 않습니다. 점검 결과는 <b>합리적 확신</b>(절대 확신 아님) 수준이며, 인용 수치·조문은 반드시 원문과 대조하십시오.
+    </div>
+  </section>
+
+  <!-- ═══ 체크리스트 ═══ -->
+  <section id="v-check" hidden>
+    <button class="back" data-go="home">← 모듈 목록</button>
+    <h2 id="chkTitle"></h2>
+    <div id="chkList"></div>
+  </section>
+
+  <!-- ═══ 개념 온보딩 ═══ -->
+  <section id="v-concepts" hidden>
+    <button class="back" data-go="home">← 모듈 목록</button>
+    <h2>개념 온보딩 — 최소 개념 세트</h2>
+    <div id="conFilter" class="con-filter"></div>
+    <div id="conList"></div>
+  </section>
+
+</main>
+
+<footer class="ft">재무감사 도우미 · 정적 웹 · 런타임 LLM 0 · 기준 원문 인용 SSoT · <a href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이</a> 자매 도구</footer>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
