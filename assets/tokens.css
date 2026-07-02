@@ -1,0 +1,35 @@
+/* 재무감사 도우미 — 디자인 토큰
+   원천: 감사 길잡이(https://hsgamsa00-netizen.github.io/Giljabi/) styles.css :root (KRDS 정렬)
+   원칙: accent #0054A6 유지 · 경중 색축 · 타이포 8단계 · Pretendard GOV 400/700 */
+:root{
+  --bg:#f4f5f6;--card:#fff;--ink:#1e2124;--muted:#5b636c;--line:#e6e8ea;--soft:#eef1f4;--line-strong:#cdd1d5;  /* KRDS Grayscale */
+  --accent:#0054A6;--accent-soft:#eaf1f9;--accent-line:#bcd2e8;
+  --good:#267337;--good-soft:#e7f4ea;--warn:#8a5c00;--warn-soft:#fdf4e3;
+  --bad:#bd2c0f;--bad-soft:#fceae6;--info:#096ab3;--info-soft:#e6f1fa;--muted2:#6b7480; /* KRDS System(Role) */
+  --radius:12px;--shadow:0 1px 2px rgba(17,24,39,.05),0 6px 18px rgba(17,24,39,.06);
+  --r-chip:6px;--r-btn:8px;--r-card:12px; /* KRDS Shape */
+  --text-meta:12px;--text-sm:13px;--text-body:15px;--text-body-lg:17px;--text-h3:18px;--text-h2:21px;--text-h1:26px;--text-display:34px;
+  --leading-tight:1.35;--leading-body:1.65;--tracking-tight:-.01em;
+  --read-max:68ch;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;
+  /* 처분 경중 1축: 엄중(징계·문책/변상/고발/수사의뢰) → 행정상(시정·주의·개선·권고·통보) → 기타 */
+  --sev-grave:#b5564f;--sev-grave-soft:#fbeae7;--sev-grave-line:#eccabf;
+  --sev-admin:#5b6b7e;--sev-admin-soft:#eef1f4;--sev-admin-line:#d3dae1;
+  --sev-etc:#8a94a0;--sev-etc-soft:#f1f3f6;--sev-etc-line:var(--line);
+
+  /* ── 재무감사 도우미 확장 토큰 ── */
+  /* 원문상태 배지 4종(신뢰 규범 §7): pdf=검증가능 · hwp=원문보존(열람PDF 없음) · csd=DRM 검증불가 · none=미보존 */
+  --src-pdf:#267337;--src-pdf-soft:#e7f4ea;
+  --src-hwp:#8a5c00;--src-hwp-soft:#fdf4e3;
+  --src-csd:#6b7480;--src-csd-soft:#f1f3f6;
+  --src-none:#bd2c0f;--src-none-soft:#fceae6;
+  /* 근거 4단계 라벨: 기준 직접근거 · 사례 직접근거 · 유사사례 참고 · 미확인 실무검토 */
+  --ev-std:#0054A6;--ev-std-soft:#eaf1f9;
+  --ev-case:#096ab3;--ev-case-soft:#e6f1fa;
+  --ev-sim:#6b7480;--ev-sim-soft:#f1f3f6;
+  --ev-unv:#8a5c00;--ev-unv-soft:#fdf4e3;
+  /* 검산 판정 */
+  --tie-ok:var(--good);--tie-ok-soft:var(--good-soft);
+  --tie-bad:var(--bad);--tie-bad-soft:var(--bad-soft);
+}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard GOV","Pretendard","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word}

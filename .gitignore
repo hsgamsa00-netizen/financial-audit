@@ -1,0 +1,6 @@
+# 로컬 절대경로 설정(공개 저장소에 로컬 경로 노출 금지)
+tools/local_paths.json
+# 작업 임시물
+_scratch/
+node_modules/
+*.log
