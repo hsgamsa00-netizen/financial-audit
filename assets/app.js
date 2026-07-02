@@ -52,10 +52,15 @@ window.addEventListener('hashchange', () => {
 });
 
 function openView(v) {
+  // 폴백으로 다른 뷰를 보여줄 때 해시도 함께 교정(navByHash 중에도 replaceState는 안전)
+  const fallback = (view) => {
+    renderHome(); show(view === 'home' ? 'home' : view);
+    if (location.hash !== '#' + view) history.replaceState(null, '', '#' + view);
+  };
   if (v === 'gate') { show('gate'); return; }
-  if (!S.org) { show('gate'); return; }
+  if (!S.org) { show('gate'); if (location.hash !== '#gate') history.replaceState(null, '', '#gate'); return; }
   if (v === 'home') { renderHome(); show('home'); }
-  else if (v === 'check') { curMod ? renderCheck(curMod) : (renderHome(), show('home')); }
+  else if (v === 'check') { curMod ? renderCheck(curMod) : fallback('home'); }
   else if (v === 'concepts') { renderConcepts(''); }
   else if (window.FA_TOOLS) { window.FA_TOOLS.open(v); }
 }
@@ -176,6 +181,7 @@ document.querySelectorAll('.lvl button').forEach(b =>
     document.querySelectorAll('.lvl button').forEach(x => x.classList.toggle('on', x === b));
     renderHome();
     if (!$('#v-check').hidden && curMod) renderCheck(curMod); // 보던 모듈 유지한 채 갱신
+    else if (!$('#v-report').hidden && window.FA_TOOLS) window.FA_TOOLS.open('report'); // 조서 요약도 난이도 범위 갱신
   }));
 document.querySelectorAll('.back').forEach(b =>
   b.addEventListener('click', () => show('home')));

@@ -137,10 +137,13 @@ def main():
         with reg_path.open(encoding="utf-8-sig", newline="") as f:
             existing = list(csv.DictReader(f))
         by_key = {(r["root"], r["file_name"]): r for r in existing}
-        n = skipped = 0
+        n = skipped = missing = 0
         for r in registry:
             tgt = by_key.get((r["root"], r["file_name"]))
-            if tgt is not None and tgt.get("sha256"):
+            if tgt is None:
+                missing += 1
+                continue  # CSV에 없는 신규 파일 — 해시해도 버려지므로 읽지 않음(일반 패스 먼저 필요)
+            if tgt.get("sha256"):
                 skipped += 1
                 continue  # 기존 해시 보존 — 전량 재해시 낭비 방지
             root_path = PATHS.get(r["root"])
@@ -150,8 +153,7 @@ def main():
             with (Path(root_path) / r["file_name"]).open("rb") as f:
                 for chunk in iter(lambda: f.read(1 << 20), b""):
                     h.update(chunk)
-            if tgt is not None:
-                tgt["sha256"] = h.hexdigest()
+            tgt["sha256"] = h.hexdigest()
             n += 1
             if n % 300 == 0:
                 print(f"hash {n}", flush=True)
@@ -167,6 +169,8 @@ def main():
         (DATA / "gate_g5_duplicates.json").write_text(
             json.dumps(dups, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"해시 완료 신규 {n}건(스킵 {skipped}) · 중복그룹 {len(dups)}")
+        if missing:
+            print(f"⚠ CSV 미등재 파일 {missing}건 — 일반 패스(python s0_inventory.py)를 먼저 실행하십시오")
         return
 
     # ── srno → 최우선 원문상태 색인 (감사원/화성 분리) ──

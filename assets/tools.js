@@ -403,8 +403,9 @@
     clearTimeout(caseQT);
     caseQT = setTimeout(() => { if (dataStore['cases_fin.json']) filterCases(); }, 150); // 디바운스
   });
-  $('#caseSe').addEventListener('change', filterCases);
-  $('#caseSt').addEventListener('change', filterCases);
+  // 데이터 미로드 상태에서 필터 변경이 LOAD_FAIL 안내를 "0건 일치"로 덮지 않도록 가드
+  $('#caseSe').addEventListener('change', () => { if (dataStore['cases_fin.json']) filterCases(); });
+  $('#caseSt').addEventListener('change', () => { if (dataStore['cases_fin.json']) filterCases(); });
   $('#caseMore').addEventListener('click', moreCases);
   $('#btnDraft').addEventListener('click', makeDraft);
   $('#btnDocs').addEventListener('click', makeDocs);
