@@ -217,8 +217,16 @@ def main():
             "needs_review": "Y" if status == "none" else "",
         })
 
-    # ── 출력: registry ──
-    with (DATA / "source_registry.csv").open("w", encoding="utf-8-sig", newline="") as f:
+    # ── 출력: registry (기존 sha256 보존 — 일반 패스가 해시를 초기화해 --hash 스킵이 무효화되는 것 방지) ──
+    reg_path = DATA / "source_registry.csv"
+    if reg_path.exists():
+        with reg_path.open(encoding="utf-8-sig", newline="") as f:
+            old_hash = {(r["root"], r["file_name"]): r.get("sha256", "")
+                        for r in csv.DictReader(f)}
+        for r in registry:
+            if not r["sha256"]:
+                r["sha256"] = old_hash.get((r["root"], r["file_name"]), "")
+    with reg_path.open("w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(registry[0].keys()))
         w.writeheader()
         w.writerows(registry)
