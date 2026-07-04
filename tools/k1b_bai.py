@@ -21,14 +21,14 @@ def post_dl(doc_id):
         return r.read()
 
 def list_board(brd):
-    rows, page = [], 1
+    # ★Spring HAL 페이지네이션: page(0부터)&size — pageIndex/recordCountPerPage는 무시되어 1페이지만 반복됨(실측)
+    rows, page = [], 0
     while True:
-        j = json.loads(get(f"/api/bak/main/mains/list?brdId={brd}&pageIndex={page}&recordCountPerPage=50"))
+        j = json.loads(get(f"/api/bak/main/mains/list?brdId={brd}&page={page}&size=50"))
         items = (j.get("_embedded") or {}).get("boardDtoList") or []
         if not items: break
         rows += items
-        tp = (j.get("page") or {}).get("totalPages", 1)
-        if page >= tp: break
+        if page >= (j.get("page") or {}).get("totalPages", 1) - 1: break
         page += 1; time.sleep(0.3)
     return rows
 
