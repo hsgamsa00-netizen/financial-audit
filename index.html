@@ -6,8 +6,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>재무감사 도우미</title>
-<link rel="stylesheet" href="assets/tokens.css?v=d3">
-<link rel="stylesheet" href="assets/app.css?v=d3">
+<link rel="stylesheet" href="assets/tokens.css?v=d4">
+<link rel="stylesheet" href="assets/app.css?v=d4">
 </head>
 <body>
 <header class="hd">
@@ -167,7 +167,10 @@
     <button class="back" data-go="home">← 처음으로</button>
     <h2>계정과목 검증</h2>
     <p class="view-p">회계 분류 트리에서 계정을 고르면 <b>왜 위험한가 → 바로 할 일 → 필요자료 → 검증 테스트 → 오류패턴 → 조서 문안</b> 순서의 검증 카드가 열립니다. 상세 근거(레시피 전문·기준조문·선례)는 펼치기 안에 있습니다.</p>
-    <div class="case-bar"><input type="search" id="kbQ" aria-label="계정·증상 검색" placeholder="계정과목·증상 검색 (예: 대손충당금, 감가상각, 선수금, 장기미수)"></div>
+    <div class="case-bar">
+      <input type="search" id="kbQ" aria-label="계정·증상 검색" placeholder="계정과목·증상 검색 (예: 대손충당금, 감가상각, 선수금, 장기미수)">
+      <span id="kbMode" class="lvl" role="group" aria-label="계정 표시 범위"><button data-mode="rich" class="on">지적례 계정</button><button data-mode="all">전체 계정</button></span>
+    </div>
     <div class="kb-wrap">
       <nav id="kbNav" class="kb-nav" aria-label="회계 분류 트리"></nav>
       <div id="kbMain" class="kb-main"></div>
@@ -215,8 +218,8 @@
 
 <footer class="ft">재무감사 도우미 · 정적 웹 · 런타임 LLM 0 · 기준 원문 인용 SSoT(지식 기준일 2026-07-03 — 2025사업연도 지방공기업·출자출연 결산기준 및 지자체 결산 통합기준) · <a href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이</a> 자매 도구</footer>
 
-<script src="assets/norm_dict.js?v=d3"></script>
-<script src="assets/app.js?v=d3"></script>
-<script src="assets/tools.js?v=d3"></script>
+<script src="assets/norm_dict.js?v=d4"></script>
+<script src="assets/app.js?v=d4"></script>
+<script src="assets/tools.js?v=d4"></script>
 </body>
 </html>

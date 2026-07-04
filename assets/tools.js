@@ -545,16 +545,26 @@
 
   /* ═══ 계정과목 검증 (전면 재설계) — 회계 분류 트리 + 검증 카드 + AI회계사 ═══ */
   let kbSel = null;   // 선택 노드 id
+  let kbAll = localStorage.getItem('fa_kb_all') === '1';   // C안: 전체 계정 모드 토글
   async function loadKb() {
-    const [tree, rec, cards, eps, laws, defs, adv, pf, nx] = await Promise.all([
+    const [tree, rec, cards, eps, laws, defs, adv, pf, nx, af] = await Promise.all([
       load('kb/accounts_tree.json'), load('kb/recipes.json'), load('kb/recipe_cards.json'),
       load('kb/error_patterns.json'), load('kb/law_cards.json'), load('kb/account_defs.json'),
-      load('kb/advisor_map.json'), load('kb/practice_findings.json'), load('kb/numeric_examples.json')]);
+      load('kb/advisor_map.json'), load('kb/practice_findings.json'), load('kb/numeric_examples.json'),
+      load('kb/accounts_full.json')]);
     // 래퍼 관용: 배열이면 그대로, 딕셔너리면 첫 배열 값(한국어 키 '노드'·'매핑' 등 포함)
     const arr = (x) => Array.isArray(x) ? x
       : (x && typeof x === 'object' ? (Object.values(x).find(v => Array.isArray(v) && v.length && typeof v[0] === 'object') || []) : []);
     return { tree: arr(tree), rec: arr(rec), cards: arr(cards),
-      eps: arr(eps), laws: arr(laws), defs: arr(defs), adv: arr(adv), pf: arr(pf), nx: arr(nx) };
+      eps: arr(eps), laws: arr(laws), defs: arr(defs), adv: arr(adv), pf: arr(pf), nx: arr(nx), full: arr(af) };
+  }
+  function mergedNodes(kb) {   // C안 병합: 지적례 노드(rich) + 전체 계정(basic·중복 제외)
+    if (!kbAll || !kb.full.length) return kb.tree;
+    const richNames = kb.tree.map(n => n.명칭);
+    const basics = kb.full
+      .filter(a => !a.기존노드_id && !richNames.some(rn => rn.includes(a.명칭) || a.명칭.includes(rn.split('·')[0])))
+      .map(a => ({ id: a.id, 명칭: a.명칭, 경로: a.경로 || [], case_kw: a.case_kw || [], basic: true, def: a, 표시순서: a.표시순서 || 9999 }));
+    return [...kb.tree, ...basics];
   }
   /* 안전 산식 계산기(CSP상 eval 불가) — 숫자·변수키·사칙연산·괄호만 허용하는 미니 파서 */
   function safeCalc(expr, vars) {
@@ -620,14 +630,16 @@
   }
   function kbPaint(kb) {
     const q = ($('#kbQ').value || '').trim();
-    let nodes = kb.tree;
+    let nodes = mergedNodes(kb);
     if (q) {
       const terms = expandQuery(q);
       nodes = nodes.filter(n => terms.some(t => nodeMatches(n, t)));
     }
-    if (!nodes.length) { $('#kbNav').innerHTML = '<div class="view-p">일치 없음</div>'; $('#kbMain').innerHTML = ''; return; }
+    // 모드 토글 상태 반영
+    document.querySelectorAll('#kbMode button').forEach(b => b.classList.toggle('on', (b.dataset.mode === 'all') === kbAll));
+    if (!nodes.length) { $('#kbNav').innerHTML = '<div class="view-p">일치 없음' + (!kbAll && kb.full.length ? ' — 「전체 계정」으로 전환해 보세요' : '') + '</div>'; $('#kbMain').innerHTML = ''; return; }
     if (!kbSel || !nodes.some(n => n.id === kbSel)) kbSel = nodes[0].id;
-    // 4계층 트리: 경로[0] → 경로[1](있으면) → 노드
+    // 4계층 트리: 경로[0] → 경로[1](있으면) → 노드 (rich 우선·이후 해설서 순)
     const top = new Map();
     nodes.forEach(n => {
       const l1 = (n.경로 || [])[0] || '기타'; const l2 = (n.경로 || [])[1] || '';
@@ -636,7 +648,8 @@
       if (!m2.has(l2)) m2.set(l2, []);
       m2.get(l2).push(n);
     });
-    const badge = (n) => [
+    top.forEach(m2 => m2.forEach(list => list.sort((a, b) => (a.basic ? 1 : 0) - (b.basic ? 1 : 0) || (a.표시순서 || 0) - (b.표시순서 || 0))));
+    const badge = (n) => n.basic ? '<i class="kb-b" title="계정 정의(해설서)">📖</i>' : [
       (n.recipe_ids || []).length ? `<i class="kb-b kb-b-r" title="검증 레시피">${(n.recipe_ids || []).length}</i>` : '',
       (n.ep_ids || []).length ? `<i class="kb-b kb-b-e" title="오류패턴">${(n.ep_ids || []).length}</i>` : '',
       (n.tie_ids || []).length ? `<i class="kb-b kb-b-t" title="검산 가능">🧮</i>` : ''].join('');
@@ -645,7 +658,7 @@
       h += `<div class="kb-l1">${esc(l1)}</div>`;
       for (const [l2, list] of m2) {
         if (l2) h += `<div class="kb-l2">${esc(l2)}</div>`;
-        list.forEach(n => { h += `<button class="kb-item ${n.id === kbSel ? 'on' : ''}" data-k="${esc(n.id)}"><b>${esc(n.명칭)}</b>${badge(n)}</button>`; });
+        list.forEach(n => { h += `<button class="kb-item ${n.id === kbSel ? 'on' : ''}${n.basic ? ' basic' : ''}" data-k="${esc(n.id)}"><b>${esc(n.명칭)}</b>${badge(n)}</button>`; });
       }
     }
     $('#kbNav').innerHTML = h;
@@ -682,6 +695,22 @@
   function kbDetail(node, kb) {
     const box = $('#kbMain');
     if (!node) { box.innerHTML = '<div class="view-p">좌측 트리에서 계정을 선택하십시오.</div>'; return; }
+    if (node.basic) {   // 전체 계정 모드의 정의형 노드: 정의+사례검색+유사 지적례 계정 안내
+      const a = node.def || {};
+      const sibs = kb.tree.filter(t => (t.경로 || [])[1] === (node.경로 || [])[1]).slice(0, 6);
+      box.innerHTML = `<div class="kb-crumb">${(node.경로 || []).map(esc).join(' › ')} › <b>${esc(node.명칭)}</b> <span class="b b-lvl">계정 정의</span></div>
+        <div class="chk"><div class="q">📖 ${esc(node.명칭)} — 표준계정과목 해설서 <span class="b b-lvl">${esc((a.출처 || '').replace(/\[\[|\]\]/g, ''))}</span></div>
+        <div class="quote">${esc(a.정의_원문 || '')}</div>
+        ${a.유의사항_원문 ? `<h4 class="co-h">회계처리 유의사항</h4><div class="quote">${esc(a.유의사항_원문)}</div>` : ''}</div>
+        <div class="view-p">이 계정의 지적 레시피는 아직 없습니다 — 관련 사례와 같은 분류의 지적례 계정을 참고하십시오.</div>
+        <div class="btnbar"><button class="btn line" data-go-cases="${esc((node.case_kw || [node.명칭])[0])}">📚 관련 사례 검색 — "${esc((node.case_kw || [node.명칭])[0])}"</button></div>
+        ${sibs.length ? `<h3 class="home-sub">같은 분류의 지적례 계정</h3>` + sibs.map(s => `<button class="kb-case" data-sib="${esc(s.id)}">▸ ${esc(s.명칭)} <span class="b b-lvl">레시피 ${(s.recipe_ids || []).length}</span></button>`).join('') : ''}`;
+      box.querySelectorAll('[data-sib]').forEach(b => b.addEventListener('click', () => { kbSel = b.dataset.sib; kbPaint(kb); }));
+      box.querySelectorAll('[data-go-cases]').forEach(b => b.addEventListener('click', () => {
+        renderCases().then(() => { const q2 = $('#caseQ'); q2.value = b.dataset.goCases; q2.dispatchEvent(new Event('input')); });
+      }));
+      return;
+    }
     let h = `<div class="kb-crumb">${(node.경로 || []).map(esc).join(' › ')} › <b>${esc(node.명칭)}</b></div>`;
     // 계정 정의(해설서 원문) — 상단 접기
     const def = kb.defs.find(d => node.명칭.includes(d.계정) || (d.계정 || '').includes(node.명칭.split('·')[0]));
@@ -790,6 +819,12 @@
     clearTimeout(kbQT);
     kbQT = setTimeout(async () => { kbPaint(await loadKb()); }, 180);
   });
+  // C안 토글: 지적례 계정 ↔ 전체 계정
+  document.querySelectorAll('#kbMode button').forEach(b => b.addEventListener('click', async () => {
+    kbAll = b.dataset.mode === 'all';
+    localStorage.setItem('fa_kb_all', kbAll ? '1' : '0');
+    kbPaint(await loadKb());
+  }));
   // AI회계사 시작 패널(홈)
   let advT = 0;
   const advEl = $('#advQ');
