@@ -200,3 +200,24 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 .kb-why{background:var(--bad-soft);color:var(--bad);border-radius:var(--r-chip);padding:8px 12px;margin:8px 0;font-size:var(--text-sm)}
 .kb-test{border-left:3px solid var(--accent);padding:6px 10px;margin:6px 0;background:var(--soft);border-radius:0 var(--r-chip) var(--r-chip) 0}
 .kb-crumb{color:var(--muted);font-size:var(--text-meta);margin-bottom:8px}
+
+/* ═══ 메뉴 단순화(2축+제3구역 3묶음) ═══ */
+.axis2{padding:18px 20px}
+.axis2 h3{font-size:1.15em}
+.axis2-flow{margin-top:8px;color:var(--muted);font-size:var(--text-meta)}
+.zone3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--space-3);margin-top:var(--space-3)}
+.z3-group{border:1px solid var(--line);border-radius:var(--r-card);background:var(--card);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.z3-h{font-size:var(--text-sm);font-weight:700;color:var(--muted);margin-bottom:2px}
+.z3-group .aux{text-align:left;background:var(--card)}
+
+/* ═══ 숫자로 검증하기(따라하기+실사례+계산기) ═══ */
+.num-step{display:flex;gap:8px;padding:4px 0;font-size:var(--text-sm)}
+.num-step b{flex-shrink:0;color:var(--accent)}
+.num-step .why{color:var(--muted2);font-size:var(--text-meta)}
+.num-real{background:var(--soft);border-left:3px solid var(--hs,#c96a1b);padding:8px 12px;border-radius:0 var(--r-chip) var(--r-chip) 0;font-size:var(--text-sm);margin:8px 0}
+.num-calc{border:1px dashed var(--accent-line);border-radius:var(--r-chip);padding:10px 12px;margin-top:8px}
+.num-calc label{display:block;font-size:var(--text-meta);color:var(--muted);margin-top:6px}
+.num-calc input{width:100%;max-width:280px;border:1px solid var(--line);border-radius:var(--r-btn);padding:7px 10px;font-family:inherit;background:var(--card);color:var(--ink)}
+.num-out{margin-top:10px;font-weight:700}
+.num-out.bad{color:var(--bad)}
+.num-out.ok{color:var(--ok,#177245)}

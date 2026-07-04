@@ -546,15 +546,66 @@
   /* ═══ 계정과목 검증 (전면 재설계) — 회계 분류 트리 + 검증 카드 + AI회계사 ═══ */
   let kbSel = null;   // 선택 노드 id
   async function loadKb() {
-    const [tree, rec, cards, eps, laws, defs, adv, pf] = await Promise.all([
+    const [tree, rec, cards, eps, laws, defs, adv, pf, nx] = await Promise.all([
       load('kb/accounts_tree.json'), load('kb/recipes.json'), load('kb/recipe_cards.json'),
       load('kb/error_patterns.json'), load('kb/law_cards.json'), load('kb/account_defs.json'),
-      load('kb/advisor_map.json'), load('kb/practice_findings.json')]);
+      load('kb/advisor_map.json'), load('kb/practice_findings.json'), load('kb/numeric_examples.json')]);
     // 래퍼 관용: 배열이면 그대로, 딕셔너리면 첫 배열 값(한국어 키 '노드'·'매핑' 등 포함)
     const arr = (x) => Array.isArray(x) ? x
       : (x && typeof x === 'object' ? (Object.values(x).find(v => Array.isArray(v) && v.length && typeof v[0] === 'object') || []) : []);
     return { tree: arr(tree), rec: arr(rec), cards: arr(cards),
-      eps: arr(eps), laws: arr(laws), defs: arr(defs), adv: arr(adv), pf: arr(pf) };
+      eps: arr(eps), laws: arr(laws), defs: arr(defs), adv: arr(adv), pf: arr(pf), nx: arr(nx) };
+  }
+  /* 안전 산식 계산기(CSP상 eval 불가) — 숫자·변수키·사칙연산·괄호만 허용하는 미니 파서 */
+  function safeCalc(expr, vars) {
+    if (!/^[a-z0-9+\-*/().\s]+$/i.test(expr)) return null;
+    const tokens = expr.match(/[a-z]+|\d+(?:\.\d+)?|[+\-*/()]/gi) || [];
+    let pos = 0;
+    const peek = () => tokens[pos], next = () => tokens[pos++];
+    function prim() {
+      const t = next();
+      if (t === '(') { const v = add(); next(); return v; }
+      if (t === '-') return -prim();
+      if (/^[a-z]+$/i.test(t)) { const v = Number(vars[t]); return isFinite(v) ? v : NaN; }
+      return Number(t);
+    }
+    function mul() { let v = prim(); while (peek() === '*' || peek() === '/') { const op = next(); const r = prim(); v = op === '*' ? v * r : v / r; } return v; }
+    function add() { let v = mul(); while (peek() === '+' || peek() === '-') { const op = next(); const r = mul(); v = op === '+' ? v + r : v - r; } return v; }
+    const out = add();
+    return (pos === tokens.length && isFinite(out)) ? out : null;
+  }
+  function numericBlock(r, kb) {   // 🔢 숫자로 검증하기(조합안: 따라하기+실사례+계산기)
+    const nx = (kb.nx || []).find(x => x.recipe_id === r.id);
+    if (!nx) return '';
+    const steps = (nx.따라하기 || []).map(s => `<div class="num-step"><b>${esc(s.단계)}</b><span>${esc(s.내용)}${s.왜 ? ` <span class="why">— ${esc(s.왜)}</span>` : ''}</span></div>`).join('');
+    let calc = '';
+    if (nx.계산기 && nx.계산기.산식) {
+      const c = nx.계산기;
+      calc = `<details class="quote-fold"><summary>🖩 직접 계산해보기 — ${esc(c.산식표시 || '')}</summary><div class="num-calc" data-expr="${esc(c.산식)}">
+        ${(c.입력 || []).map(i => `<label>${esc(i.라벨)}<input type="number" step="any" data-k="${esc(i.키)}" value="${esc(String(i.예시 ?? ''))}"></label>`).join('')}
+        <div class="btnbar" style="margin-top:8px"><button class="btn line num-go" type="button">계산</button></div>
+        <div class="num-out" hidden></div>
+        <div class="m">해석: 양수=${esc((c.결과해석 || {}).양수 || '')} · 음수=${esc((c.결과해석 || {}).음수 || '')}</div></div></details>`;
+    }
+    return `<h4 class="co-h">🔢 숫자로 검증하기 (예시)</h4><div class="co-t">${steps}
+      ${nx.실사례_한줄 ? `<div class="num-real">📌 ${esc(nx.실사례_한줄)}</div>` : ''}${calc}
+      <div class="m">※ 예시 숫자는 이해를 돕는 가공 수치 — 실제 판단은 원문·증빙 대조 후.</div></div>`;
+  }
+  function wireCalcs(box) {
+    box.querySelectorAll('.num-calc').forEach(el => {
+      const btn = el.querySelector('.num-go'), out = el.querySelector('.num-out');
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const vars = {};
+        el.querySelectorAll('input[data-k]').forEach(i => { vars[i.dataset.k] = parseFloat(i.value); });
+        const v = safeCalc(el.dataset.expr, vars);
+        out.hidden = false;
+        if (v === null || !isFinite(v)) { out.textContent = '계산 불가 — 입력값을 확인하세요'; out.className = 'num-out'; return; }
+        const abs = Math.round(Math.abs(v)).toLocaleString('ko-KR');
+        out.textContent = v > 0 ? `결과: +${abs}원 — 차이·부족 가능성(근거를 요구하세요)` : v < 0 ? `결과: −${abs}원 — 장부가 더 큼(과다·환입 사유 확인)` : '결과: 0원 — 일치(산정 근거 문서만 확인)';
+        out.className = 'num-out ' + (v === 0 ? 'ok' : 'bad');
+      });
+    });
   }
   async function renderKb(selId) {
     show('kb');
@@ -622,6 +673,7 @@
       ${stepH('바로 할 일', (c.바로할일 || []).map((x, i) => `<div class="co-li">${i + 1}. ${esc(x)}</div>`).join(''))}
       ${stepH('필요자료', (r['3_확인자료'] || []).map(x => `<span class="b b-ev">${esc(x)}</span>`).join(' '))}
       ${stepH('검증 테스트', (c.검증테스트 || []).map(t => `<div class="kb-test"><b>▶ ${esc(t.이름)}</b><div class="co-t">${esc(t.규칙 || '')}</div>${t.오탐주의 ? `<div class="m">⚠ 오탐주의: ${esc(t.오탐주의)}</div>` : ''}</div>`).join('') || esc(r['4_재계산절차'] || ''))}
+      ${numericBlock(r, kb)}
       ${stepH('대표 오류패턴', eps2.slice(0, 4).map(p => `<div class="co-li">▸ ${esc(p.패턴)}${p.재무제표영향 ? ` <span class="b b-lvl">${esc(p.재무제표영향)}</span>` : ''}</div>`).join(''))}
       ${r['7_문안골격'] ? `<details class="quote-fold"><summary>📋 조서 문안 골격(빈칸 프레임)</summary><div class="quote">${esc(r['7_문안골격'])}</div><div class="m">※ 자동 작성 아님 — 사실·수치·기준을 원문 대조 후 채우십시오.</div></details>` : ''}
       <details class="quote-fold"><summary>📚 상세 근거 펼치기 (성립요건·기준조문·판단·선례)</summary>${recipeFull(r, kb)}</details>
@@ -676,6 +728,7 @@
       const c = (all || []).find(x => x.id === b.dataset.cid || String(x.s) === b.dataset.cid);
       if (c) openCaseDetail(c);
     }));
+    wireCalcs(box);
     const gt = box.querySelector('[data-go-tie]'); if (gt) gt.addEventListener('click', () => renderTie());
     box.querySelectorAll('[data-go-cases]').forEach(b => b.addEventListener('click', () => {
       renderCases().then(() => { const q2 = $('#caseQ'); q2.value = b.dataset.goCases; q2.dispatchEvent(new Event('input')); });
@@ -744,14 +797,6 @@
     advEl.addEventListener('input', () => { clearTimeout(advT); advT = setTimeout(advise, 250); });
     advEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { clearTimeout(advT); advise(); } });
   }
-  // 빠른 검증(홈) — 키워드로 트리 노드 열기
-  document.querySelectorAll('#quickRow .quick').forEach(b => b.addEventListener('click', async () => {
-    if (!orgOf()) { alert('기관유형을 먼저 선택하십시오.'); return; }
-    const kb = await loadKb();
-    const kw = b.dataset.node;
-    const n = kb.tree.find(x => x.명칭.includes(kw)) || kb.tree.find(x => nodeMatches(x, kw));
-    renderKb(n ? n.id : undefined);
-  }));
   $('#caseMore').addEventListener('click', moreCases);
   $('#btnDraft').addEventListener('click', makeDraft);
   $('#btnDocs').addEventListener('click', makeDocs);

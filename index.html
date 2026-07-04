@@ -6,8 +6,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>재무감사 도우미</title>
-<link rel="stylesheet" href="assets/tokens.css?v=d2">
-<link rel="stylesheet" href="assets/app.css?v=d2">
+<link rel="stylesheet" href="assets/tokens.css?v=d3">
+<link rel="stylesheet" href="assets/app.css?v=d3">
 </head>
 <body>
 <header class="hd">
@@ -76,41 +76,31 @@
       <div id="advOut" class="adv-out" hidden></div>
     </div>
 
-    <!-- 1영역: 주요 시작 3버튼 -->
-    <div class="cta-row">
-      <button class="cta" data-tool="tie"><b>🧮 자료 넣고 검증 시작</b><span>결산서 수치 입력 → 정합성 검산 → 불일치=예외 등록</span></button>
-      <button class="cta" data-tool="kb"><b>📒 계정과목별 감사계획</b><span>회계 분류 트리에서 계정 선택 → 필요자료·검증 테스트</span></button>
-      <button class="cta" data-tool="report"><b>📋 조서·자료요구서 만들기</b><span>검증·예외 결과를 조서 초안과 자료요구 목록으로</span></button>
-    </div>
+    <!-- 2축: 계정과목별 감사계획 (대형) -->
+    <button class="mod-card mod-primary axis2" data-tool="kb"><h3>📒 계정과목별 감사계획</h3>
+      <div class="cnt">회계 분류 트리에서 계정을 고르면 — 왜 위험한가 → 바로 할 일 → 필요자료 → 검증 테스트 → 실무 지적례 → 조서 문안</div>
+      <div class="axis2-flow">1 대상 파악 → 2 자료 확보 → 3 검증 실행 → 4 예외 검토 → 5 조서 생성</div>
+    </button>
 
-    <!-- 2영역: 오늘의 감사 흐름 -->
-    <div class="steps">
-      <div><b>1 대상 파악</b><span>계정·문제 특정</span></div>
-      <div><b>2 자료 확보</b><span>자료요구 목록</span></div>
-      <div><b>3 검증 실행</b><span>검산·재계산·대사</span></div>
-      <div><b>4 예외 검토</b><span>원인·반론 확인</span></div>
-      <div><b>5 조서 생성</b><span>문안·근거 정리</span></div>
-    </div>
-
-    <!-- 3영역: 빠른 검증 -->
-    <h3 class="home-sub">빠른 검증</h3>
-    <div class="quick-row" id="quickRow">
-      <button class="quick" data-node="현금·예금">현금·예금 대사</button>
-      <button class="quick" data-node="대손충당금">미수금·대손충당금</button>
-      <button class="quick" data-node="유형자산">유형자산·감가상각</button>
-      <button class="quick" data-node="충당부채">충당부채</button>
-      <button class="quick" data-node="결산">결산서·공시 대사</button>
-    </div>
-
-    <!-- 4영역: 보조 지식·도구 -->
-    <h3 class="home-sub">보조 지식·도구</h3>
-    <div class="aux-row">
-      <button class="aux" data-tool="cases">📚 재무 사례 10,225</button>
-      <button class="aux" data-tool="risk">🚨 위험 스크리닝</button>
-      <button class="aux" data-tool="tree">⚖️ 처분수위 판단트리</button>
-      <button class="aux" data-tool="calc">🖩 계산 워크시트</button>
-      <button class="aux" id="btnConcepts">📘 개념 온보딩</button>
-      <button class="aux" id="btnChecklist">📑 점검항목(기관 자기점검)</button>
+    <!-- 제3구역: 감사 일의 순서로 3묶음 -->
+    <div class="zone3">
+      <div class="z3-group">
+        <div class="z3-h">🧮 검증 실행</div>
+        <button class="aux" data-tool="tie">정합성 검산기</button>
+        <button class="aux" data-tool="risk">위험 스크리닝</button>
+        <button class="aux" data-tool="calc">계산 워크시트</button>
+      </div>
+      <div class="z3-group">
+        <div class="z3-h">📋 마무리·산출</div>
+        <button class="aux" data-tool="report">감사조서·예외 관리</button>
+        <button class="aux" data-tool="tree">처분수위 판단트리</button>
+      </div>
+      <div class="z3-group">
+        <div class="z3-h">📚 지식·참고</div>
+        <button class="aux" data-tool="cases">재무 사례 10,225</button>
+        <button class="aux" id="btnConcepts">개념 온보딩</button>
+        <button class="aux" id="btnChecklist">점검항목(자기점검)</button>
+      </div>
     </div>
     <div id="modGrid" class="mod-grid" hidden></div>
     <div class="case-bar" style="margin-top:10px" hidden><input type="search" id="itemQ" aria-label="점검항목 검색"></div>
@@ -225,8 +215,8 @@
 
 <footer class="ft">재무감사 도우미 · 정적 웹 · 런타임 LLM 0 · 기준 원문 인용 SSoT(지식 기준일 2026-07-03 — 2025사업연도 지방공기업·출자출연 결산기준 및 지자체 결산 통합기준) · <a href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이</a> 자매 도구</footer>
 
-<script src="assets/norm_dict.js?v=d2"></script>
-<script src="assets/app.js?v=d2"></script>
-<script src="assets/tools.js?v=d2"></script>
+<script src="assets/norm_dict.js?v=d3"></script>
+<script src="assets/app.js?v=d3"></script>
+<script src="assets/tools.js?v=d3"></script>
 </body>
 </html>
