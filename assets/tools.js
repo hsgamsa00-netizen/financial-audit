@@ -234,9 +234,11 @@
     const all = dataStore['cases_fin.json'] || [];
     const q = ($('#caseQ').value || '').trim();
     const se = $('#caseSe').value; const st = $('#caseSt').value;
+    const fb = $('#caseB').value; const fd = $('#caseD').value;
     const terms = q ? expandQuery(q) : [];
     caseView.list = all.filter(c =>
-      (!q || terms.some(t => c.t.includes(t))) && (!se || c.se === se) && (!st || c.st === st));
+      (!q || terms.some(t => c.t.includes(t))) && (!se || c.se === se) && (!st || c.st === st)
+      && (!fb || (c.b || []).includes(fb)) && (!fd || (c.d || []).some(x => x.includes(fd))));
     caseView.shown = 0;
     $('#caseStats').textContent = `${caseView.list.length.toLocaleString()}건 일치`
       + (terms.length > 1 ? ` · 동의어 확장: ${terms.join(', ')}` : '');
@@ -250,21 +252,71 @@
     next.forEach(c => {
       const [lb, cls] = ST_BADGE[c.st] || ST_BADGE.none;
       const d = document.createElement('div');
-      d.className = 'case';
+      d.className = 'case case-row';
+      d.setAttribute('role', 'button'); d.tabIndex = 0;
       d.innerHTML = `<div class="t"><span class="b ${c.se === '화성' ? 'se-hs' : 'se-bai'}">${esc(c.se === '화성' ? '화성특례시' : c.se)}</span> ${esc(c.t)}</div>
         <div class="m">${esc(c.y)} · srno ${esc(c.s)} ${c.ax && c.ax !== '분야축' ? '· 확장검색' : ''}</div>
-        <div class="meta">${(c.b || []).map(b => `<span class="b b-area">${esc(b)}</span>`).join('')}${(c.d || []).map(x => `<span class="b b-lvl">${esc(x)}</span>`).join('')}<span class="b ${cls}">${lb}</span></div>
-        <div class="chips"><button class="chip" data-copy>제목 복사</button><a class="chip" data-gil href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이에서 검색 ↗</a></div>`;
-      d.querySelector('[data-copy]').addEventListener('click', (e) => {
-        copyText(c.t).then(ok => { e.target.textContent = ok ? '✓ 복사됨' : '복사 실패'; });
-      });
-      // 길잡이가 URL 검색 파라미터 미지원 → 이동 시 제목 자동 복사(붙여넣기만 하면 됨)
-      d.querySelector('[data-gil]').addEventListener('click', (e) => {
-        copyText(c.t).then(ok => { if (ok) e.target.textContent = '✓ 제목 복사됨 — 붙여넣어 검색 ↗'; });
-      });
+        <div class="meta">${(c.b || []).map(b => `<span class="b b-area">${esc(b)}</span>`).join('')}${(c.d || []).map(x => `<span class="b b-lvl">${esc(x)}</span>`).join('')}<span class="b ${cls}">${lb}</span></div>`;
+      const open = () => openCaseDetail(c);
+      d.addEventListener('click', open);
+      d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
       box.appendChild(d);
     });
     $('#caseMore').hidden = caseView.shown >= caseView.list.length;
+  }
+
+  /* ── 사례 상세 슬라이드오버(본문 내장 · 감사 길잡이 UX 이식) ──
+     본문은 fin_body_p{bp}.json 지연 로딩(최초 1샤드만) · 요약카드이므로 원문 대조 경고 상시 */
+  function fmtBody(text, kps) {
+    let h = esc(text || '');
+    (kps || []).forEach(k => {
+      const t = esc(String(k)).trim();
+      if (t.length >= 4 && h.includes(t)) h = h.split(t).join('<b>' + t + '</b>');
+    });
+    return h.replace(/\n+/g, '<br>');
+  }
+  async function openCaseDetail(c) {
+    let ov = $('#caseOver');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'caseOver'; ov.className = 'case-over'; ov.hidden = true;
+      ov.innerHTML = '<div class="co-panel" role="dialog" aria-modal="false" aria-label="사례 상세"><button class="co-x" aria-label="닫기">✕</button><div class="co-body"></div></div>';
+      document.body.appendChild(ov);
+      ov.querySelector('.co-x').addEventListener('click', () => { ov.hidden = true; });
+      ov.addEventListener('click', (e) => { if (e.target === ov) ov.hidden = true; });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ov.hidden) ov.hidden = true; });
+    }
+    const bodyEl = ov.querySelector('.co-body');
+    ov.hidden = false;
+    bodyEl.innerHTML = '<div class="view-p">본문 불러오는 중…</div>';
+    const shard = await load(`fin_body_p${c.bp || 1}.json`);
+    const b = (shard && shard[c.id]) || null;
+    const [lb, cls] = ST_BADGE[c.st] || ST_BADGE.none;
+    const sec = (title, html) => html ? `<h4 class="co-h">${title}</h4><div class="co-t">${html}</div>` : '';
+    const isBai = c.se !== '화성';
+    const srcRow = isBai && /^\d+$/.test(String(c.s))
+      ? `<a class="chip" href="https://www.bai.go.kr/bai/result/branch/detail?srno=${esc(c.s)}" target="_blank" rel="noopener">감사원 공개문 페이지 ↗</a>`
+      : `<button class="chip" data-copy>제목 복사(원문 열람용)</button>`;
+    if (!b) {
+      bodyEl.innerHTML = `<div class="co-title">${esc(c.t)}</div><div class="view-p">본문 데이터를 불러오지 못했습니다. 네트워크 확인 후 다시 열어 주십시오.</div>`;
+      return;
+    }
+    bodyEl.innerHTML = `
+      <div class="co-title">${esc(c.t)}</div>
+      <div class="meta">${esc(c.se === '화성' ? '화성특례시' : c.se)} · ${esc(c.y)}${b.gn ? ' · ' + esc(b.gn) : ''}${b.pd ? ' · 공개 ' + esc(b.pd) : ''}${b.ot ? ' · ' + esc(b.ot) : ''}</div>
+      <div class="meta">${(b.disp || []).map(x => `<span class="b b-lvl">${esc(x)}</span>`).join('')}${(c.b || []).map(x => `<span class="b b-area">${esc(x)}</span>`).join('')}<span class="b ${cls}">${lb}</span>${(b.hs || []).length ? '<span class="b st-none">형사연계</span>' : ''}</div>
+      ${sec('요지', fmtBody(b.yo))}
+      ${sec('위반사실', fmtBody(b.wi, b.kp))}
+      ${sec('원인·통제미비점', fmtBody(b.wo))}
+      ${sec('착안점', (b.ca || []).map(x => `<div class="co-li">▸ ${esc(x)}</div>`).join(''))}
+      ${sec('적신호', b.red ? `<div class="co-red">🚩 ${esc(b.red)}</div>` : '')}
+      ${sec('경과', (b.gy || []).map(g => `<div class="co-li">${esc(g.일자 || '')} — ${esc(g.사건 || '')}</div>`).join(''))}
+      <h4 class="co-h">출처·원문</h4>
+      <div class="co-t"><div class="m">srno ${esc(c.s)}${(b.pg || []).length ? ' · 근거 p.' + (b.pg || []).map(esc).join(', p.') : ''} · <span class="b ${cls}">${lb}</span></div>
+      <div class="chips">${srcRow}</div>
+      <div class="note" style="margin-top:8px">본 카드는 AI 압축요약입니다. 금액·법조문·처분 인용 전 반드시 원문과 대조하십시오.${c.st === 'none' ? ' <b>이 사례는 원문 미보존 — 요약 검증 불가·인용 주의.</b>' : ''}</div></div>`;
+    const cp = bodyEl.querySelector('[data-copy]');
+    if (cp) cp.addEventListener('click', (e) => { copyText(c.t).then(ok => { e.target.textContent = ok ? '✓ 제목 복사됨' : '복사 실패'; }); });
   }
 
   /* 입력 영속화 공용 헬퍼(트리·워크시트) — 뷰 이탈·새로고침에도 입력 유지 */
@@ -507,6 +559,8 @@
   // 데이터 미로드 상태에서 필터 변경이 LOAD_FAIL 안내를 "0건 일치"로 덮지 않도록 가드
   $('#caseSe').addEventListener('change', () => { if (dataStore['cases_fin.json']) filterCases(); });
   $('#caseSt').addEventListener('change', () => { if (dataStore['cases_fin.json']) filterCases(); });
+  $('#caseB').addEventListener('change', () => { if (dataStore['cases_fin.json']) filterCases(); });
+  $('#caseD').addEventListener('change', () => { if (dataStore['cases_fin.json']) filterCases(); });
   $('#caseMore').addEventListener('click', moreCases);
   $('#btnDraft').addEventListener('click', makeDraft);
   $('#btnDocs').addEventListener('click', makeDocs);

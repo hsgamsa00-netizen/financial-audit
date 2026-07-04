@@ -140,3 +140,20 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 /* 계열 배지(감사 길잡이 정체성 정합: 감사원=블루 윤곽·화성=오렌지 윤곽) */
 .se-bai{background:var(--accent-soft);color:var(--accent)}
 .se-hs{background:var(--hs-soft);color:var(--hs)}
+
+/* ═══ D0: 사례 본문 내장 — 상세 슬라이드오버(감사 길잡이 UX 이식)·1급 카드 ═══ */
+.mod-primary{width:100%;margin-bottom:var(--space-3);border:2px solid var(--accent-line);background:var(--accent-soft)}
+.mod-primary:hover{border-color:var(--accent)}
+.case-row{cursor:pointer}
+.case-row:hover{border-color:var(--accent)}
+.case-row:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.case-over{position:fixed;inset:0;z-index:40;background:transparent}
+.co-panel{position:absolute;top:0;right:0;bottom:0;width:min(680px,92vw);background:var(--card);border-left:1px solid var(--line);box-shadow:-8px 0 28px rgba(0,0,0,.18);overflow-y:auto;padding:var(--space-4)}
+.co-x{position:sticky;top:0;float:right;border:1px solid var(--line);background:var(--card);border-radius:999px;width:32px;height:32px;cursor:pointer;font-size:14px;z-index:2}
+.co-title{font-size:var(--text-body-lg);font-weight:700;margin:2px 40px 8px 0;line-height:1.4}
+.co-h{margin:16px 0 6px;font-size:var(--text-sm);color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:4px}
+.co-t{font-size:var(--text-sm);line-height:1.65;color:var(--ink)}
+.co-t b{background:var(--accent-soft)}
+.co-li{padding:3px 0}
+.co-red{color:var(--bad);background:var(--bad-soft);border-radius:var(--r-chip);padding:6px 10px}
+@media (max-width:640px){.co-panel{width:100vw;border-left:0}}
