@@ -168,3 +168,35 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 .kb-case{display:block;width:100%;text-align:left;border:0;background:none;cursor:pointer;font-family:inherit;font-size:var(--text-sm);color:var(--ink);padding:3px 0}
 .kb-case:hover{color:var(--accent)}
 @media (max-width:720px){.kb-wrap{grid-template-columns:1fr}.kb-nav{position:static;max-height:none;flex-direction:row;flex-wrap:wrap}}
+
+/* ═══ 전면 재설계(2026-07-04): AI회계사 홈·계정과목 검증 트리 ═══ */
+.adv-panel{border:2px solid var(--accent-line);background:var(--accent-soft);border-radius:var(--r-card);padding:var(--space-4);margin-bottom:var(--space-3)}
+.adv-head{font-size:var(--text-body-lg);margin-bottom:8px}
+.adv-panel input{width:100%;border:1px solid var(--line);border-radius:var(--r-btn);padding:11px 14px;font-size:var(--text-body);font-family:inherit;background:var(--card);color:var(--ink)}
+.adv-out{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.adv-hit{background:var(--card);border:1px solid var(--line);border-radius:var(--r-chip);padding:10px 12px}
+.cta-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-3);margin-bottom:var(--space-3)}
+.cta{text-align:left;cursor:pointer;border:1px solid var(--accent-line);border-radius:var(--r-card);background:var(--card);padding:14px 16px;font-family:inherit;box-shadow:var(--shadow)}
+.cta:hover{border-color:var(--accent)}
+.cta b{display:block;font-size:var(--text-body-lg);margin-bottom:4px}
+.cta span{color:var(--muted2);font-size:var(--text-meta)}
+.quick-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-2)}
+.quick{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:var(--text-sm);cursor:pointer;font-family:inherit;color:var(--ink)}
+.quick:hover{border-color:var(--accent);color:var(--accent)}
+.aux-row{display:flex;gap:8px;flex-wrap:wrap}
+.aux{border:1px solid var(--line);background:var(--soft);border-radius:var(--r-chip);padding:6px 12px;font-size:var(--text-meta);cursor:pointer;font-family:inherit;color:var(--muted)}
+.aux:hover{color:var(--accent);border-color:var(--accent)}
+.notice.slim{font-size:var(--text-meta);padding:8px 12px}
+.notice.slim details{display:inline}
+.notice.slim summary{cursor:pointer;color:var(--accent);display:inline}
+.kb-l1{font-weight:700;font-size:var(--text-sm);color:var(--ink);margin:10px 0 2px;border-bottom:1px solid var(--line);padding-bottom:3px}
+.kb-l2{font-size:var(--text-meta);color:var(--muted);margin:6px 0 2px;padding-left:2px}
+.kb-item{display:flex;align-items:center;gap:6px}
+.kb-item b{flex:1;font-weight:400}
+.kb-item.on b{font-weight:700}
+.kb-b{font-style:normal;font-size:11px;border-radius:999px;padding:1px 6px;background:var(--soft);color:var(--muted)}
+.kb-b-r{background:var(--accent-soft);color:var(--accent)}
+.kb-b-e{background:var(--bad-soft);color:var(--bad)}
+.kb-why{background:var(--bad-soft);color:var(--bad);border-radius:var(--r-chip);padding:8px 12px;margin:8px 0;font-size:var(--text-sm)}
+.kb-test{border-left:3px solid var(--accent);padding:6px 10px;margin:6px 0;background:var(--soft);border-radius:0 var(--r-chip) var(--r-chip) 0}
+.kb-crumb{color:var(--muted);font-size:var(--text-meta);margin-bottom:8px}

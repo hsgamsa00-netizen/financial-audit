@@ -97,7 +97,7 @@ function renderHome() {
   const fg = $('#firstGuide');
   if (!localStorage.getItem('fa_seen') && fg) {
     fg.innerHTML = `<div class="note info" style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
-      <span>🧭 <b>처음이신가요?</b> 권장 순서 — ① 📘 개념 온보딩 → ② 🚨 위험 스크리닝(계획) → ③ 모듈 체크리스트 → ④ 🧮 검산기 → ⑤ 📋 조서 생성</span>
+      <span>🧭 <b>처음이신가요?</b> 위 입력창에 감사 중인 문제를 적거나, ① 🧮 자료 넣고 검증 → ② 📒 계정과목별 감사계획 → ③ 📋 조서 생성 순서로 시작하세요. 용어가 낯설면 📘 개념 온보딩.</span>
       <button class="chip" id="fgClose">닫기</button></div>`;
     fg.querySelector('#fgClose').addEventListener('click', () => { localStorage.setItem('fa_seen', '1'); fg.innerHTML = ''; });
   } else if (fg) fg.innerHTML = '';
@@ -274,6 +274,14 @@ document.querySelectorAll('.gate-card').forEach(b =>
   }));
 $('#gateConcepts').addEventListener('click', () => renderConcepts(''));
 $('#itemQ').addEventListener('input', () => { clearTimeout(window.__itemQT); window.__itemQT = setTimeout(searchItems, 150); });
+// 점검항목(기관 자기점검) — 부록 토글: 모듈 그리드+검색바 표시
+const bc = $('#btnChecklist');
+if (bc) bc.addEventListener('click', () => {
+  const g = $('#modGrid'), bar = $('#itemQ').closest('.case-bar');
+  const showNow = g.hidden;
+  g.hidden = !showNow; if (bar) bar.hidden = !showNow;
+  if (showNow) g.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 // 감사 4단계 바 → 해당 도구 연결
 const STEP_GO = ['risk', null, 'tie', 'report'];
 document.querySelectorAll('.steps div').forEach((el, i) => {
