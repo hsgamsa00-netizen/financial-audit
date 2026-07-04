@@ -234,3 +234,8 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 .desk-diffrow{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:6px;margin:6px 0}
 .desk-diffrow input{border:1px solid var(--line);border-radius:var(--r-btn);padding:7px 9px;font-family:inherit;background:var(--card);color:var(--ink)}
 .desk-r.bad{border-left:3px solid var(--bad)}
+
+/* 가독성 개선 — 정의·인용 블록(2026-07-04 사용자 지적) */
+.quote{line-height:1.75;font-size:var(--text-sm);white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;padding:10px 14px}
+.co-t{word-break:keep-all;overflow-wrap:anywhere}
+.kb-main .chk .quote{max-height:260px;overflow-y:auto}
