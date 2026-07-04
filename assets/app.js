@@ -36,7 +36,7 @@ let CHECKITEMS = [];
 let CONCEPTS = [];
 
 const $ = (sel) => document.querySelector(sel);
-const views = ['gate', 'home', 'check', 'concepts', 'tie', 'risk', 'cases', 'tree', 'calc', 'report'];
+const views = ['gate', 'home', 'check', 'concepts', 'tie', 'risk', 'cases', 'tree', 'calc', 'report', 'kb'];
 let curMod = '';        // 현재 열려 있는 체크리스트 모듈
 let navByHash = false;  // hashchange 유래 전환(중복 push 방지)
 

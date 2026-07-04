@@ -543,11 +543,86 @@
     outputTo('자료요구목록', md);
   }
 
+  /* ═══ 계정과목 지식 (D1) — 레시피·오류패턴·조문·과목을 계정 축으로 통합 ═══ */
+  let kbSel = null;
+  async function renderKb() {
+    show('kb');
+    $('#kbMain').innerHTML = '<div class="view-p">지식 데이터 불러오는 중…</div>';
+    const [rec, eps, laws] = await Promise.all([load('kb/recipes.json'), load('kb/error_patterns.json'), load('kb/law_cards.json')]);
+    if (!eps && !rec) { $('#kbMain').innerHTML = LOAD_FAIL; return; }
+    kbPaint(rec || [], eps || [], laws || []);
+  }
+  function kbGroups(rec, eps) {
+    // 계열 = 레시피 계정과목(우선) ∪ 패턴 계정과목
+    const m = new Map();
+    (rec || []).forEach(r => { const k = r.계정과목 || '기타'; if (!m.has(k)) m.set(k, { rec: [], eps: [] }); m.get(k).rec.push(r); });
+    (eps || []).forEach(p => { const k = p.계정과목 || '기타';
+      const hit = [...m.keys()].find(g => g === k || g.includes(k) || k.includes(g));
+      const key = hit || k;
+      if (!m.has(key)) m.set(key, { rec: [], eps: [] }); m.get(key).eps.push(p); });
+    return m;
+  }
+  function kbPaint(rec, eps, laws) {
+    const q = ($('#kbQ').value || '').trim();
+    const groups = kbGroups(rec, eps);
+    let keys = [...groups.keys()];
+    if (q) keys = keys.filter(k => {
+      const g = groups.get(k);
+      return k.includes(q) || g.rec.some(r => (r.제목 || '').includes(q)) || g.eps.some(p => (p.제목 || '').includes(q) || (p.오류유형 || '').includes(q));
+    });
+    if (!kbSel || !keys.includes(kbSel)) kbSel = keys[0] || null;
+    $('#kbNav').innerHTML = keys.map(k => {
+      const g = groups.get(k);
+      return `<button class="kb-item ${k === kbSel ? 'on' : ''}" data-k="${esc(k)}"><b>${esc(k)}</b><span>레시피 ${g.rec.length} · 패턴 ${g.eps.length}</span></button>`;
+    }).join('') || '<div class="view-p">일치 없음</div>';
+    $('#kbNav').querySelectorAll('.kb-item').forEach(b => b.addEventListener('click', () => { kbSel = b.dataset.k; kbPaint(rec, eps, laws); }));
+    kbDetail(groups.get(kbSel), laws, rec, eps);
+  }
+  const stepH = (t, html) => html ? `<h4 class="co-h">${t}</h4><div class="co-t">${html}</div>` : '';
+  function lawFold(laws, cardId, quote) {
+    const c = (laws || []).find(x => x.id === cardId);
+    if (!c) return quote ? `<div class="co-li">📖 ${esc(quote)} <span class="b b-lvl">외부기준</span></div>` : '';
+    return `<details class="quote-fold"><summary>📖 ${esc(c.출처)} ${esc(c.조문번호)} ${esc(c.제목 || '')}${quote ? ` — "${esc(quote.slice(0, 40))}…"` : ''}</summary><div class="quote">${esc(c.원문)}</div></details>`;
+  }
+  function kbDetail(g, laws, rec, eps) {
+    const box = $('#kbMain');
+    if (!g) { box.innerHTML = '<div class="view-p">좌측에서 계정과목을 선택하십시오.</div>'; return; }
+    let h = '';
+    g.rec.forEach(r => {
+      h += `<div class="chk kb-recipe"><div class="q">🧾 ${esc(r.제목 || r.계정과목)} <span class="b b-area">레시피</span>${(r.체계 || []).map(x => `<span class="b b-lvl">${esc(x)}</span>`).join('')}</div>
+        ${stepH('① 성립 요건', esc((r['1_성립요건'] || {}).요지 || '') + ((r['1_성립요건'] || {}).기준조문 || []).map(j => lawFold(laws, j.card_id, j.인용)).join(''))}
+        ${stepH('② 전형 오류패턴', ((r['2_오류패턴'] || []).map(p => `<div class="co-li">▸ ${esc(p.패턴)}${p.재무제표영향 ? ` <span class="b b-lvl">${esc(p.재무제표영향)}</span>` : ''}</div>`).join('')))}
+        ${stepH('③ 확인자료', (r['3_확인자료'] || []).map(x => `<span class="b b-ev">${esc(x)}</span>`).join(' '))}
+        ${stepH('④ 재계산·대조 절차', esc(r['4_재계산절차'] || ''))}
+        ${stepH('⑤ 판단 포인트', esc(r['5_판단포인트'] || ''))}
+        ${stepH('⑥ 선례', (r['6_선례'] || []).map(s => `<button class="co-li kb-case" data-cid="${esc(s.card_id || '')}">▸ ${esc(s.제목)} <span class="b b-lvl">srno ${esc(s.srno)}</span></button>`).join(''))}
+        ${stepH('⑦ 문안 골격(빈칸 프레임)', r['7_문안골격'] ? `<div class="quote">${esc(r['7_문안골격'])}</div><div class="m">※ 자동 작성 아님 — 사실·수치·기준을 감사자가 원문 대조 후 채우십시오.</div>` : '')}
+        <div class="m" style="margin-top:6px">근거: ${(r.근거출처 || []).map(esc).join(' · ')}</div></div>`;
+    });
+    if (g.eps.length) {
+      h += `<h3 class="home-sub">지적 오류패턴 (${g.eps.length})</h3>`;
+      g.eps.forEach(p => {
+        h += `<div class="chk"><div class="q">${esc(p.제목)} <span class="b b-lvl">${esc(p.오류유형 || '')}</span></div>
+          <div class="co-t">${esc(p.지적요지_원문 || '')}</div>
+          ${p.확인방법 ? `<div class="rule">확인: ${esc(p.확인방법)}</div>` : ''}
+          ${p.기준근거 ? `<div class="m">기준: ${esc(p.기준근거)}</div>` : ''}
+          <div class="m">출처: ${esc(p.출처 || '')}${p.srno ? ` · srno ${esc(p.srno)}` : ''}</div></div>`;
+      });
+    }
+    box.innerHTML = h || '<div class="view-p">이 계열의 콘텐츠가 아직 없습니다.</div>';
+    // 선례 → 기존 사례 슬라이드오버 재사용
+    box.querySelectorAll('.kb-case').forEach(b => b.addEventListener('click', async () => {
+      const all = dataStore['cases_fin.json'] || await load('cases_fin.json');
+      const c = (all || []).find(x => x.id === b.dataset.cid || String(x.s) === b.dataset.cid);
+      if (c) openCaseDetail(c);
+    }));
+  }
+
   /* ── 진입점·이벤트 ── */
   window.FA_TOOLS = {
     open(tool) {
       if (!orgOf()) { alert('기관유형을 먼저 선택하십시오.'); return; }
-      ({ tie: renderTie, risk: renderRisk, cases: renderCases, tree: renderTree, calc: renderCalc, report: renderReport })[tool]();
+      ({ tie: renderTie, risk: renderRisk, cases: renderCases, tree: renderTree, calc: renderCalc, report: renderReport, kb: renderKb })[tool]();
     },
     expandQuery, // 홈 점검항목 검색이 동일 동의어 확장을 사용
   };
@@ -561,6 +636,14 @@
   $('#caseSt').addEventListener('change', () => { if (dataStore['cases_fin.json']) filterCases(); });
   $('#caseB').addEventListener('change', () => { if (dataStore['cases_fin.json']) filterCases(); });
   $('#caseD').addEventListener('change', () => { if (dataStore['cases_fin.json']) filterCases(); });
+  let kbQT = 0;
+  $('#kbQ').addEventListener('input', () => {
+    clearTimeout(kbQT);
+    kbQT = setTimeout(() => {
+      if (dataStore['kb/error_patterns.json'] || dataStore['kb/recipes.json'])
+        kbPaint(dataStore['kb/recipes.json'] || [], dataStore['kb/error_patterns.json'] || [], dataStore['kb/law_cards.json'] || []);
+    }, 150);
+  });
   $('#caseMore').addEventListener('click', moreCases);
   $('#btnDraft').addEventListener('click', makeDraft);
   $('#btnDocs').addEventListener('click', makeDocs);

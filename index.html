@@ -6,8 +6,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>재무감사 도우미</title>
-<link rel="stylesheet" href="assets/tokens.css">
-<link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/tokens.css?v=d1">
+<link rel="stylesheet" href="assets/app.css?v=d1">
 </head>
 <body>
 <header class="hd">
@@ -78,6 +78,7 @@
       <div><b>3. 분석·잔액테스트</b><span>검산 · 비율분석 · 실사</span></div>
       <div><b>4. 종결·보고</b><span>처분수위 · 조서 · 보고</span></div>
     </div>
+    <button class="mod-card mod-primary" data-tool="kb"><h3>🧠 계정과목 지식 — 지적 레시피·오류패턴·기준조문</h3><div class="cnt">실제 감사원 회계감리·결산검사 지적에서 역산한 계정과목별 오류패턴과 원문 기준조문·확인방법·유사선례를 한 화면에서</div></button>
     <button class="mod-card mod-primary" data-tool="cases"><h3>📚 재무 사례 10,225 — 본문 열람</h3><div class="cnt">실제 지적사례의 요지·위반사실·원인·착안점을 앱 안에서 바로 열람 · 분야·처분·원문상태 필터 · 핵심구 강조</div></button>
     <div id="modGrid" class="mod-grid"></div>
     <h3 class="home-sub">도구</h3>
@@ -145,6 +146,18 @@
     <button id="caseMore" class="btn line" hidden>더 보기 (+100)</button>
   </section>
 
+  <!-- ═══ 계정과목 지식 (D1) ═══ -->
+  <section id="v-kb" hidden>
+    <button class="back" data-go="home">← 모듈 목록</button>
+    <h2>계정과목 지식 — 지적 레시피 · 오류패턴 · 기준조문</h2>
+    <p class="view-p">감사원 회계감리·결산검사 지적에서 <b>역산한 계정과목별 지식</b>입니다. 모든 항목에 원문 근거(조문·보고서 페이지)가 달려 있으며, 문안 골격은 빈칸 프레임일 뿐 판단·지적 확정이 아닙니다.</p>
+    <div class="case-bar"><input type="search" id="kbQ" aria-label="지식 검색" placeholder="계정과목·오류·기준 검색 (예: 대손충당금, 감가상각, 선수금)"></div>
+    <div class="kb-wrap">
+      <nav id="kbNav" class="kb-nav" aria-label="계정과목 계열"></nav>
+      <div id="kbMain" class="kb-main"></div>
+    </div>
+  </section>
+
   <!-- ═══ 처분수위 판단트리 ═══ -->
   <section id="v-tree" hidden>
     <button class="back" data-go="home">← 모듈 목록</button>
@@ -186,8 +199,8 @@
 
 <footer class="ft">재무감사 도우미 · 정적 웹 · 런타임 LLM 0 · 기준 원문 인용 SSoT(지식 기준일 2026-07-03 — 2025사업연도 지방공기업·출자출연 결산기준 및 지자체 결산 통합기준) · <a href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이</a> 자매 도구</footer>
 
-<script src="assets/norm_dict.js"></script>
-<script src="assets/app.js"></script>
-<script src="assets/tools.js"></script>
+<script src="assets/norm_dict.js?v=d1"></script>
+<script src="assets/app.js?v=d1"></script>
+<script src="assets/tools.js?v=d1"></script>
 </body>
 </html>

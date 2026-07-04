@@ -157,3 +157,14 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 .co-li{padding:3px 0}
 .co-red{color:var(--bad);background:var(--bad-soft);border-radius:var(--r-chip);padding:6px 10px}
 @media (max-width:640px){.co-panel{width:100vw;border-left:0}}
+
+/* ═══ D1: 계정과목 지식(kb) — 좌 계열 네비 + 우 상세 ═══ */
+.kb-wrap{display:grid;grid-template-columns:230px 1fr;gap:var(--space-3);align-items:start}
+.kb-nav{display:flex;flex-direction:column;gap:6px;position:sticky;top:64px;max-height:80vh;overflow-y:auto}
+.kb-item{text-align:left;cursor:pointer;border:1px solid var(--line);border-radius:var(--r-chip);background:var(--card);padding:8px 10px;font-family:inherit;font-size:var(--text-sm)}
+.kb-item span{display:block;color:var(--muted2);font-size:var(--text-meta)}
+.kb-item.on{border-color:var(--accent);background:var(--accent-soft)}
+.kb-recipe{border-left:3px solid var(--accent)}
+.kb-case{display:block;width:100%;text-align:left;border:0;background:none;cursor:pointer;font-family:inherit;font-size:var(--text-sm);color:var(--ink);padding:3px 0}
+.kb-case:hover{color:var(--accent)}
+@media (max-width:720px){.kb-wrap{grid-template-columns:1fr}.kb-nav{position:static;max-height:none;flex-direction:row;flex-wrap:wrap}}
