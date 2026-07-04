@@ -239,3 +239,16 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 .quote{line-height:1.75;font-size:var(--text-sm);white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;padding:10px 14px}
 .co-t{word-break:keep-all;overflow-wrap:anywhere}
 .kb-main .chk .quote{max-height:260px;overflow-y:auto}
+
+/* 메인 2축 좌우 배치 + 한 줄 도구바 (2026-07-04) */
+.main2{display:grid;grid-template-columns:1.15fr 1fr;gap:var(--space-3);align-items:stretch;margin-bottom:var(--space-3)}
+.main2 .adv-panel{margin-bottom:0;display:flex;flex-direction:column}
+.main2 .adv-head{font-size:1.25em;line-height:1.4}
+.main2 .axis2{margin:0;display:flex;flex-direction:column;justify-content:center}
+.main2 .axis2 h3{font-size:1.35em;line-height:1.35}
+.adv-hint{color:var(--muted2);font-size:var(--text-meta);margin-top:6px}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1px solid var(--line);border-radius:var(--r-card);background:var(--card);padding:10px 12px}
+.tb-g{font-size:var(--text-meta);font-weight:700;color:var(--muted);margin-left:6px}
+.tb-g:first-child{margin-left:0}
+@media (max-width:760px){.main2{grid-template-columns:1fr}}
+.co-li{white-space:pre-line}

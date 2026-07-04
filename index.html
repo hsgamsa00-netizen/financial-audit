@@ -6,8 +6,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>재무감사 도우미</title>
-<link rel="stylesheet" href="assets/tokens.css?v=d6">
-<link rel="stylesheet" href="assets/app.css?v=d6">
+<link rel="stylesheet" href="assets/tokens.css?v=d7">
+<link rel="stylesheet" href="assets/app.css?v=d7">
 </head>
 <body>
 <header class="hd">
@@ -69,44 +69,37 @@
   <section id="v-home" hidden>
     <div id="firstGuide"></div>
 
-    <!-- 1영역: AI회계사 시작 패널 -->
-    <div class="adv-panel">
-      <div class="adv-head">🧑‍💼 <b>AI 회계사</b> — 무엇을 감사 중인가요?</div>
-      <input type="search" id="advQ" aria-label="감사 중인 문제 입력" placeholder="감사 중인 문제를 적어보세요. 예: 미수금이 오래 남아 있음 · 결산서와 공시자료가 다름 · 성과급 지급근거가 불명확함">
-      <div id="advOut" class="adv-out" hidden></div>
+    <!-- 메인 2축: AI회계사(좌) + 계정과목별 감사계획(우) — 좌우 대형 -->
+    <div class="main2">
+      <div class="adv-panel">
+        <div class="adv-head">🧑‍💼 <b>AI 회계사</b><br>무엇을 감사 중인가요?</div>
+        <input type="search" id="advQ" aria-label="감사 중인 문제 입력" placeholder="감사 중인 문제를 적어보세요. 예: 미수금이 오래 남아 있음">
+        <div class="adv-hint">계정을 몰라도 됩니다 — 증상을 적으면 계정·자료·검증을 안내합니다.</div>
+        <div id="advOut" class="adv-out" hidden></div>
+      </div>
+      <button class="mod-card mod-primary axis2" data-tool="kb"><h3>📒 계정과목별<br>감사계획</h3>
+        <div class="cnt">회계 분류 트리에서 계정을 고르면 — 왜 위험한가 → 바로 할 일 → 필요자료 → 검증 테스트 → 실무 지적례 → 조서 문안</div>
+        <div class="axis2-flow">1 대상 파악 → 2 자료 확보 → 3 검증 실행 → 4 예외 검토 → 5 조서 생성</div>
+      </button>
     </div>
 
-    <!-- 2축: 계정과목별 감사계획 (대형) -->
-    <button class="mod-card mod-primary axis2" data-tool="kb"><h3>📒 계정과목별 감사계획</h3>
-      <div class="cnt">회계 분류 트리에서 계정을 고르면 — 왜 위험한가 → 바로 할 일 → 필요자료 → 검증 테스트 → 실무 지적례 → 조서 문안</div>
-      <div class="axis2-flow">1 대상 파악 → 2 자료 확보 → 3 검증 실행 → 4 예외 검토 → 5 조서 생성</div>
-    </button>
-
-    <!-- 제3구역: 감사 일의 순서로 3묶음 -->
-    <div class="zone3">
-      <div class="z3-group">
-        <div class="z3-h">🧮 검증 실행</div>
-        <button class="aux" data-tool="desk"><b>결산서 판독대</b> — 자동 예비검토</button>
-        <button class="aux" data-tool="tie">정합성 검산기</button>
-        <button class="aux" data-tool="risk">위험 스크리닝</button>
-        <button class="aux" data-tool="calc">계산 워크시트</button>
-      </div>
-      <div class="z3-group">
-        <div class="z3-h">📋 마무리·산출</div>
-        <button class="aux" data-tool="report">감사조서·예외 관리</button>
-        <button class="aux" data-tool="tree">처분수위 판단트리</button>
-      </div>
-      <div class="z3-group">
-        <div class="z3-h">📚 지식·참고</div>
-        <button class="aux" data-tool="cases">재무 사례 10,225</button>
-        <button class="aux" data-tool="budget">예산과목 사전(통계목 138)</button>
-        <button class="aux" id="btnConcepts">개념 온보딩</button>
-        <button class="aux" id="btnChecklist">점검항목(자기점검)</button>
-      </div>
+    <!-- 하단 도구바: 한 줄 가로 -->
+    <div class="toolbar">
+      <span class="tb-g">🧮 검증 실행</span>
+      <button class="aux" data-tool="desk">결산서 판독대</button>
+      <button class="aux" data-tool="tie">정합성 검산기</button>
+      <button class="aux" data-tool="risk">위험 스크리닝</button>
+      <button class="aux" data-tool="calc">계산 워크시트</button>
+      <span class="tb-g">📋 마무리·산출</span>
+      <button class="aux" data-tool="report">감사조서·예외</button>
+      <button class="aux" data-tool="tree">처분수위 판단</button>
+      <span class="tb-g">📚 지식창고</span>
+      <button class="aux" data-tool="cases">재무 사례 10,225</button>
+      <button class="aux" data-tool="budget">예산과목 사전</button>
+      <button class="aux" id="btnConcepts">개념 온보딩</button>
+      <span class="tb-g">📑</span>
+      <button class="aux" id="btnChecklist"><b>분야별 점검표</b></button>
     </div>
-    <div id="modGrid" class="mod-grid" hidden></div>
-    <div class="case-bar" style="margin-top:10px" hidden><input type="search" id="itemQ" aria-label="점검항목 검색"></div>
-    <div id="itemQOut"></div>
 
     <div class="notice slim">
       본 도구는 감사 판단을 대신하지 않습니다 — 결과는 <b>합리적 확신</b> 수준이며 수치·조문은 원문과 대조하십시오. 입력·예외는 이 브라우저에만 저장됩니다.
@@ -114,11 +107,17 @@
     </div>
   </section>
 
-  <!-- ═══ 체크리스트 ═══ -->
+  <!-- ═══ 분야별 점검표 (통합 — 좌측 분야 네비 + 우측 점검항목) ═══ -->
   <section id="v-check" hidden>
-    <button class="back" data-go="home">← 모듈 목록</button>
-    <h2 id="chkTitle"></h2>
-    <div id="chkList"></div>
+    <button class="back" data-go="home">← 처음으로</button>
+    <h2>분야별 점검표</h2>
+    <p class="view-p">결산기준의 착안사항을 분야별로 점검하고(예/아니오/해당없음), 「아니오」는 지적 후보로 조서에 모입니다. <b>기관 자기점검 관점</b>의 기초 점검이며 — 계정 단위 심층 검증은 「계정과목별 감사계획」을 이용하십시오.</p>
+    <div class="case-bar"><input type="search" id="itemQ" aria-label="점검항목 검색" placeholder="점검항목 검색 (예: 업무추진비, 미수금, 성과급 — 동의어 자동 확장)"></div>
+    <div id="itemQOut"></div>
+    <div class="kb-wrap">
+      <nav id="chkNav" class="kb-nav" aria-label="점검 분야"></nav>
+      <div class="kb-main"><h3 id="chkTitle" class="home-sub" style="margin-top:0"></h3><div id="chkList"></div></div>
+    </div>
   </section>
 
   <!-- ═══ 개념 온보딩 ═══ -->
@@ -239,8 +238,8 @@
 
 <footer class="ft">재무감사 도우미 · 정적 웹 · 런타임 LLM 0 · 기준 원문 인용 SSoT(지식 기준일 2026-07-03 — 2025사업연도 지방공기업·출자출연 결산기준 및 지자체 결산 통합기준) · <a href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이</a> 자매 도구</footer>
 
-<script src="assets/norm_dict.js?v=d6"></script>
-<script src="assets/app.js?v=d6"></script>
-<script src="assets/tools.js?v=d6"></script>
+<script src="assets/norm_dict.js?v=d7"></script>
+<script src="assets/app.js?v=d7"></script>
+<script src="assets/tools.js?v=d7"></script>
 </body>
 </html>

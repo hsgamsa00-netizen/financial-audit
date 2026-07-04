@@ -569,6 +569,17 @@
       .map(a => ({ id: a.id, 명칭: a.명칭, 경로: a.경로 || [], case_kw: a.case_kw || [], basic: true, def: a, 표시순서: a.표시순서 || 9999 }));
     return [...kb.tree, ...basics];
   }
+  /* 장문 가독성: 한국어 목록 표지 앞 자동 줄바꿈(가.나.다./1) 2)/①/※/다만·단) — 표시 전용·원문 무변경 */
+  function fmtBreaks(t) {
+    if (!t || t.length < 90) return t || '';
+    return t
+      .replace(/\s(?=[가나다라마바사아자차]\.\s)/g, '\n')
+      .replace(/\s(?=\d{1,2}\)\s)/g, '\n')
+      .replace(/\s(?=[①②③④⑤⑥⑦⑧⑨⑩])/g, '\n')
+      .replace(/\s(?=※)/g, '\n')
+      .replace(/\s(?=(?:다만|단),)/g, '\n')
+      .replace(/\n{3,}/g, '\n\n');
+  }
   /* 안전 산식 계산기(CSP상 eval 불가) — 숫자·변수키·사칙연산·괄호만 허용하는 미니 파서 */
   function safeCalc(expr, vars) {
     if (!/^[a-z0-9+\-*/().\s]+$/i.test(expr)) return null;
@@ -711,8 +722,8 @@
       const sibs = kb.tree.filter(t => (t.경로 || [])[1] === (node.경로 || [])[1]).slice(0, 6);
       box.innerHTML = `<div class="kb-crumb">${(node.경로 || []).map(esc).join(' › ')} › <b>${esc(node.명칭)}</b> <span class="b b-lvl">계정 정의</span></div>
         <div class="chk"><div class="q">📖 ${esc(node.명칭)} — 표준계정과목 해설서 <span class="b b-lvl">${esc((a.출처 || '').replace(/\[\[|\]\]/g, ''))}</span></div>
-        <div class="quote">${esc(a.정의_원문 || '')}</div>
-        ${a.유의사항_원문 ? `<h4 class="co-h">회계처리 유의사항</h4><div class="quote">${esc(a.유의사항_원문)}</div>` : ''}</div>
+        <div class="quote">${esc(fmtBreaks(a.정의_원문 || ''))}</div>
+        ${a.유의사항_원문 ? `<h4 class="co-h">회계처리 유의사항</h4><div class="quote">${esc(fmtBreaks(a.유의사항_원문))}</div>` : ''}</div>
         <div class="view-p">이 계정의 지적 레시피는 아직 없습니다 — 관련 사례와 같은 분류의 지적례 계정을 참고하십시오.</div>
         <div class="btnbar"><button class="btn line" data-go-cases="${esc((node.case_kw || [node.명칭])[0])}">📚 관련 사례 검색 — "${esc((node.case_kw || [node.명칭])[0])}"</button></div>
         ${sibs.length ? `<h3 class="home-sub">같은 분류의 지적례 계정</h3>` + sibs.map(s => `<button class="kb-case" data-sib="${esc(s.id)}">▸ ${esc(s.명칭)} <span class="b b-lvl">레시피 ${(s.recipe_ids || []).length}</span></button>`).join('') : ''}`;
@@ -725,7 +736,7 @@
     let h = `<div class="kb-crumb">${(node.경로 || []).map(esc).join(' › ')} › <b>${esc(node.명칭)}</b></div>`;
     // 계정 정의(해설서 원문) — 상단 접기
     const def = kb.defs.find(d => node.명칭.includes(d.계정) || (d.계정 || '').includes(node.명칭.split('·')[0]));
-    if (def) h += `<details class="quote-fold"><summary>📖 계정 정의 — ${esc(def.계정)} <span class="b b-lvl">${esc((def.출처 || '').replace(/\[\[|\]\]/g, ''))}</span></summary><div class="quote">${esc(def.정의_원문 || '')}${def.유의사항_원문 ? '<hr>' + esc(def.유의사항_원문) : ''}</div></details>`;
+    if (def) h += `<details class="quote-fold"><summary>📖 계정 정의 — ${esc(def.계정)} <span class="b b-lvl">${esc((def.출처 || '').replace(/\[\[|\]\]/g, ''))}</span></summary><div class="quote">${esc(fmtBreaks(def.정의_원문 || ''))}${def.유의사항_원문 ? '<hr>' + esc(fmtBreaks(def.유의사항_원문)) : ''}</div></details>`;
     // 검증 카드(레시피)
     const recs = (node.recipe_ids || []).map(id => kb.rec.find(r => r.id === id)).filter(Boolean);
     recs.forEach(r => { h += verifyCard(r, kb); });
@@ -916,10 +927,10 @@
         (p.통계목 || []).forEach(t => {
           if (q && !(hit(t.명칭) || hit(t.코드) || hit(p.명칭))) return;
           h += `<div class="chk"><div class="q">${esc(t.코드)} ${esc(t.명칭)} <span class="b b-lvl">${esc((t.근거 || '').replace(/\[\[|\]\]/g, ''))}</span></div>
-            ${t.정의_원문 ? `<div class="quote">${esc(t.정의_원문)}</div>` : ''}
-            ${(t.편성기준_핵심 || []).length ? `<div class="co-t">${(t.편성기준_핵심 || []).map(x => `<div class="co-li">▸ ${esc(x)}</div>`).join('')}</div>` : ''}</div>`;
+            ${t.정의_원문 ? `<div class="quote">${esc(fmtBreaks(t.정의_원문))}</div>` : ''}
+            ${(t.편성기준_핵심 || []).length ? `<div class="co-t">${(t.편성기준_핵심 || []).map(x => `<div class="co-li">▸ ${esc(fmtBreaks(x))}</div>`).join('')}</div>` : ''}</div>`;
         });
-        if ((p.편성기준_원문요점 || []).length) h += `<div class="m">${(p.편성기준_원문요점 || []).slice(0, 3).map(esc).join(' · ')}</div>`;
+        if ((p.편성기준_원문요점 || []).length) h += `<div class="m">${(p.편성기준_원문요점 || []).slice(0, 3).map(x => esc(fmtBreaks(x))).join('<br>')}</div>`;
         h += '</details>';
       });
     });
@@ -982,4 +993,10 @@
     $('#draftOut').value = ''; lastGen = { kind: '', value: '' };
     renderReport();
   });
+
+  // 딥링크 보정: 초기 라우팅이 tools.js 로드 전에 실행됨 — 도구 뷰 해시면 여기서 렌더
+  const _dv = (location.hash || '').slice(1);
+  if (orgOf() && ({ tie: 1, risk: 1, cases: 1, tree: 1, calc: 1, report: 1, kb: 1, desk: 1, budget: 1 })[_dv]) {
+    try { window.FA_TOOLS.open(_dv); } catch (e) {}
+  }
 })();

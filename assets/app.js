@@ -102,24 +102,7 @@ function renderHome() {
     fg.querySelector('#fgClose').addEventListener('click', () => { localStorage.setItem('fa_seen', '1'); fg.innerHTML = ''; });
   } else if (fg) fg.innerHTML = '';
 
-  const resp = respAll();
-  const grid = $('#modGrid');
-  grid.innerHTML = '';
-  MODULES.forEach(m => {
-    const list = itemsFor(m.key);
-    const n = list.length;
-    const nAll = itemsForAllLvl(m.key).length;
-    const done = list.filter(it => resp[it.id] && resp[it.id].a).length;
-    const b = document.createElement('button');
-    b.className = 'mod-card' + (n ? '' : ' empty');
-    // 0건 사유 분기: 심화 전용 vs 이 기관유형 해당 없음
-    const cntTxt = n ? `착안질문 ${n}건 · 응답 ${done}/${n}${done === n && n ? ' ✓' : ''}`
-      : (nAll ? `심화 전환 시 ${nAll}건` : '이 기관유형은 해당 항목 없음');
-    b.innerHTML = `<h3>${m.icon} ${m.key}</h3><div class="cnt">${cntTxt}</div><div class="cnt">${m.desc}</div>`;
-    if (n) b.addEventListener('click', () => renderCheck(m.key));
-    else b.setAttribute('aria-disabled', 'true');
-    grid.appendChild(b);
-  });
+  // 분야 카드 그리드는 「분야별 점검표」 통합 뷰(v-check 좌측 네비)로 이전됨(2026-07-04)
 }
 
 /* 홈 전역 점검항목 검색(동의어 확장) */
@@ -151,9 +134,26 @@ function respAll() {
 }
 function respSave(all) { localStorage.setItem('fa_resp:' + S.org, JSON.stringify(all)); }
 
+function renderChkNav() {
+  const nav = $('#chkNav');
+  if (!nav) return;
+  const resp = respAll();
+  nav.innerHTML = MODULES.map(m => {
+    const list = itemsFor(m.key);
+    const n = list.length;
+    const done = list.filter(it => resp[it.id] && resp[it.id].a).length;
+    const dis = !n;
+    return `<button class="kb-item ${m.key === curMod ? 'on' : ''}" data-m="${m.key}" ${dis ? 'aria-disabled="true"' : ''}>
+      <b>${m.icon} ${m.key}</b><i class="kb-b ${done === n && n ? 'kb-b-r' : ''}">${n ? done + '/' + n : '해당없음'}</i></button>`;
+  }).join('');
+  nav.querySelectorAll('.kb-item').forEach(b => b.addEventListener('click', () => {
+    if (itemsFor(b.dataset.m).length) renderCheck(b.dataset.m);
+  }));
+}
 function renderCheck(mod) {
   curMod = mod;
   localStorage.setItem('fa_mod', mod); // 새로고침·딥링크 복원용
+  renderChkNav();
   $('#chkTitle').textContent = `${mod} — ${S.org} 점검 착안사항`;
   const list = $('#chkList');
   list.innerHTML = '';
@@ -274,13 +274,13 @@ document.querySelectorAll('.gate-card').forEach(b =>
   }));
 $('#gateConcepts').addEventListener('click', () => renderConcepts(''));
 $('#itemQ').addEventListener('input', () => { clearTimeout(window.__itemQT); window.__itemQT = setTimeout(searchItems, 150); });
-// 점검항목(기관 자기점검) — 부록 토글: 모듈 그리드+검색바 표시
+// 분야별 점검표 진입 — 마지막 본 분야(없으면 항목 있는 첫 분야)로
 const bc = $('#btnChecklist');
 if (bc) bc.addEventListener('click', () => {
-  const g = $('#modGrid'), bar = $('#itemQ').closest('.case-bar');
-  const showNow = g.hidden;
-  g.hidden = !showNow; if (bar) bar.hidden = !showNow;
-  if (showNow) g.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const saved = localStorage.getItem('fa_mod');
+  const first = (saved && itemsFor(saved).length) ? saved
+    : (MODULES.find(m => itemsFor(m.key).length) || MODULES[0]).key;
+  renderCheck(first);
 });
 // 감사 4단계 바 → 해당 도구 연결
 const STEP_GO = ['risk', null, 'tie', 'report'];
