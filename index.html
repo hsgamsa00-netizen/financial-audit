@@ -6,8 +6,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>재무감사 도우미</title>
-<link rel="stylesheet" href="assets/tokens.css?v=d4">
-<link rel="stylesheet" href="assets/app.css?v=d4">
+<link rel="stylesheet" href="assets/tokens.css?v=d5">
+<link rel="stylesheet" href="assets/app.css?v=d5">
 </head>
 <body>
 <header class="hd">
@@ -86,6 +86,7 @@
     <div class="zone3">
       <div class="z3-group">
         <div class="z3-h">🧮 검증 실행</div>
+        <button class="aux" data-tool="desk"><b>결산서 판독대</b> — 자동 예비검토</button>
         <button class="aux" data-tool="tie">정합성 검산기</button>
         <button class="aux" data-tool="risk">위험 스크리닝</button>
         <button class="aux" data-tool="calc">계산 워크시트</button>
@@ -98,6 +99,7 @@
       <div class="z3-group">
         <div class="z3-h">📚 지식·참고</div>
         <button class="aux" data-tool="cases">재무 사례 10,225</button>
+        <button class="aux" data-tool="budget">예산과목 사전(통계목 138)</button>
         <button class="aux" id="btnConcepts">개념 온보딩</button>
         <button class="aux" id="btnChecklist">점검항목(자기점검)</button>
       </div>
@@ -125,6 +127,25 @@
     <h2>개념 온보딩 — 최소 개념 세트</h2>
     <div id="conFilter" class="con-filter"></div>
     <div id="conList"></div>
+  </section>
+
+  <!-- ═══ 결산서 판독대 (D2 — 수기입력 1차·자동 예비검토) ═══ -->
+  <section id="v-desk" hidden>
+    <button class="back" data-go="home">← 처음으로</button>
+    <h2>결산서 판독대 — 자동 예비검토</h2>
+    <p class="view-p">결산서의 핵심 수치를 옮겨 적으면 <b>정합성 검산·전기 대비 변동·비율 판정</b>을 한 번에 수행합니다(결정론·LLM 0). 불일치와 신호는 <b>확인 필요 후보</b>일 뿐 지적 확정이 아닙니다. 입력값은 이 PC에만 저장됩니다.</p>
+    <div id="deskForm"></div>
+    <div class="btnbar"><button class="btn" id="deskRun">🔎 예비검토 실행</button><button class="btn line" id="deskClear">입력 지우기</button></div>
+    <div id="deskOut"></div>
+  </section>
+
+  <!-- ═══ 예산과목 사전 (통계목 138) ═══ -->
+  <section id="v-budget" hidden>
+    <button class="back" data-go="home">← 처음으로</button>
+    <h2>세출 예산과목 사전 — 편성목·통계목</h2>
+    <p class="view-p">「지방자치단체 예산편성 운영기준」 별표의 세출 성질별 분류 원문입니다(그룹 8 · 편성목 38 · 통계목 138). 목적 외 사용·통계목 오편성 판단의 기준입니다.</p>
+    <div class="case-bar"><input type="search" id="bgQ" aria-label="예산과목 검색" placeholder="과목 검색 (예: 업무추진비, 기간제, 일반운영비, 301)"></div>
+    <div id="bgList"></div>
   </section>
 
   <!-- ═══ 정합성 검산기 ═══ -->
@@ -218,8 +239,8 @@
 
 <footer class="ft">재무감사 도우미 · 정적 웹 · 런타임 LLM 0 · 기준 원문 인용 SSoT(지식 기준일 2026-07-03 — 2025사업연도 지방공기업·출자출연 결산기준 및 지자체 결산 통합기준) · <a href="https://hsgamsa00-netizen.github.io/Giljabi/" target="_blank" rel="noopener">감사 길잡이</a> 자매 도구</footer>
 
-<script src="assets/norm_dict.js?v=d4"></script>
-<script src="assets/app.js?v=d4"></script>
-<script src="assets/tools.js?v=d4"></script>
+<script src="assets/norm_dict.js?v=d5"></script>
+<script src="assets/app.js?v=d5"></script>
+<script src="assets/tools.js?v=d5"></script>
 </body>
 </html>

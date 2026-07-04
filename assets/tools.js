@@ -519,6 +519,7 @@
       doneAll.forEach(it => { md += `| ${it.id} ${it.착안질문.slice(0, 40)} | ${resp[it.id].a} | ${resp[it.id].doc || ''} |\n`; });
       md += '\n';
     }
+    md += `## 처분요구서 골격(실무 보고서 5단 구조 — 빈칸 프레임)\n지적 후보를 처분요구서로 발전시킬 때 아래 구조 사용(타 기관 재무감사 결과보고서 추출 표준):\n1. 업무 개요: (기재)\n2. 관련 내규·판단기준: (조문 원문 인용)\n3. 문제점(사실관계·차이·영향): (수치는 원문 대조 후)\n4. 관계부서 의견: (기재)\n5. 조치할 사항: (조치권한자를 주어로·명사형 종결)\n\n`;
     md += `## 유의사항\n- 본 초안은 합리적 확신 수준의 점검 보조 자료이며 처분·지적 확정이 아님.\n- 인용 수치·조문은 원문과 대조 후 사용할 것.\n`;
     outputTo('감사조서초안', md);
   }
@@ -561,7 +562,9 @@
   function mergedNodes(kb) {   // C안 병합: 지적례 노드(rich) + 전체 계정(basic·중복 제외)
     if (!kbAll || !kb.full.length) return kb.tree;
     const richNames = kb.tree.map(n => n.명칭);
+    const org = orgOf();
     const basics = kb.full
+      .filter(a => !(a.체계 || []).length || (a.체계 || []).includes(org))
       .filter(a => !a.기존노드_id && !richNames.some(rn => rn.includes(a.명칭) || a.명칭.includes(rn.split('·')[0])))
       .map(a => ({ id: a.id, 명칭: a.명칭, 경로: a.경로 || [], case_kw: a.case_kw || [], basic: true, def: a, 표시순서: a.표시순서 || 9999 }));
     return [...kb.tree, ...basics];
@@ -591,7 +594,7 @@
     let calc = '';
     if (nx.계산기 && nx.계산기.산식) {
       const c = nx.계산기;
-      calc = `<details class="quote-fold"><summary>🖩 직접 계산해보기 — ${esc(c.산식표시 || '')}</summary><div class="num-calc" data-expr="${esc(c.산식)}">
+      calc = `<details class="quote-fold"><summary>🖩 직접 계산해보기 — ${esc(c.산식표시 || '')}</summary><div class="num-calc" data-expr="${esc(c.산식)}" data-nm="${esc(r.계정과목 || '')}">
         ${(c.입력 || []).map(i => `<label>${esc(i.라벨)}<input type="number" step="any" data-k="${esc(i.키)}" value="${esc(String(i.예시 ?? ''))}"></label>`).join('')}
         <div class="btnbar" style="margin-top:8px"><button class="btn line num-go" type="button">계산</button></div>
         <div class="num-out" hidden></div>
@@ -614,6 +617,14 @@
         const abs = Math.round(Math.abs(v)).toLocaleString('ko-KR');
         out.textContent = v > 0 ? `결과: +${abs}원 — 차이·부족 가능성(근거를 요구하세요)` : v < 0 ? `결과: −${abs}원 — 장부가 더 큼(과다·환입 사유 확인)` : '결과: 0원 — 일치(산정 근거 문서만 확인)';
         out.className = 'num-out ' + (v === 0 ? 'ok' : 'bad');
+        let xb = el.querySelector('.num-exc');
+        if (v !== 0) {
+          if (!xb) {
+            xb = document.createElement('button'); xb.className = 'chip num-exc'; xb.type = 'button'; out.after(xb);
+            xb.addEventListener('click', () => { excAdd({ 이름: '숫자검증: ' + (el.dataset.nm || '계정 검증'), 근거: '숫자로 검증하기(예시 계산기)', 내용: out.textContent, 금액차이: v }); xb.textContent = '✓ 예외로 등록됨'; xb.disabled = true; });
+          }
+          xb.textContent = '＋ 예외로 등록'; xb.disabled = false; xb.hidden = false;
+        } else if (xb) xb.hidden = true;
       });
     });
   }
@@ -796,11 +807,130 @@
     out.querySelectorAll('[data-adv-node]').forEach(b => b.addEventListener('click', () => { if (b.dataset.advNode) renderKb(b.dataset.advNode); }));
   }
 
+  /* ═══ 결산서 판독대 (D2 — 파일럿 실증 사양·수기입력·결정론) ═══ */
+  const DESK_FIELDS = [
+    { g: 'A. 재무상태표', items: [
+      ['자산총계', 'a1', 'a0'], ['부채총계', 'b1', 'b0'], ['자본(순자산)총계', 'c1', 'c0'],
+      ['유동자산', 'ca1', null], ['유동부채', 'cl1', null], ['현금및현금성자산', 'ch1', 'ch0']] },
+    { g: 'B. 손익계산서(재정운영표)', items: [
+      ['매출액(사업수익)', 's1', 's0'], ['영업이익(손실은 음수)', 'op1', 'op0'],
+      ['영업외수익', 'nr1', null], ['영업외비용', 'ne1', null], ['법인세비용', 'tx1', null], ['당기순이익', 'ni1', 'ni0']] },
+    { g: 'C. 현금흐름표', items: [['기초 현금', 'cf0', null], ['현금 증감(감소는 음수)', 'cfd', null], ['기말 현금', 'cf1', null]] },
+  ];
+  function deskStore() { try { return JSON.parse(localStorage.getItem('fa_desk:' + orgOf()) || '{}'); } catch { return {}; } }
+  function renderDesk() {
+    show('desk');
+    const saved = deskStore();
+    $('#deskForm').innerHTML = DESK_FIELDS.map(sec => `<div class="chk"><div class="q">${esc(sec.g)}</div><div class="desk-grid">
+      ${sec.items.map(([lb, k1, k0]) => `<label class="desk-f">${esc(lb)}<span class="desk-pair">
+        <input type="number" step="any" data-dk="${k1}" placeholder="당기" value="${saved[k1] ?? ''}">
+        ${k0 ? `<input type="number" step="any" data-dk="${k0}" placeholder="전기" value="${saved[k0] ?? ''}">` : ''}</span></label>`).join('')}
+    </div></div>`).join('')
+    + `<div class="chk"><div class="q">D. 차이명세서 대사(선택) — 본표 금액과 「재무제표와 예산결산서 차이명세서」의 재무제표란이 같은지</div>
+      <div id="deskDiff"></div><button class="btn line" id="deskDiffAdd" type="button">+ 계정 추가</button></div>`;
+    const dd = $('#deskDiff');
+    const addRow = (nm, v1, v2) => {
+      const row = document.createElement('div'); row.className = 'desk-diffrow';
+      row.innerHTML = `<input type="text" placeholder="계정명(예: 임대료수익)" value="${esc(nm || '')}">
+        <input type="number" step="any" placeholder="본표 금액" value="${v1 ?? ''}">
+        <input type="number" step="any" placeholder="차이명세서 재무제표란" value="${v2 ?? ''}">`;
+      dd.appendChild(row);
+    };
+    (saved._diff || [[], []]).length ? (saved._diff || []).forEach(r => addRow(r[0], r[1], r[2])) : null;
+    if (!dd.children.length) { addRow(); addRow(); }
+    $('#deskDiffAdd').onclick = () => addRow();
+    $('#deskRun').onclick = runDesk;
+    $('#deskClear').onclick = () => { localStorage.removeItem('fa_desk:' + orgOf()); renderDesk(); $('#deskOut').innerHTML = ''; };
+    $('#deskOut').innerHTML = '';
+  }
+  function runDesk() {
+    const v = {};
+    document.querySelectorAll('#deskForm [data-dk]').forEach(i => { v[i.dataset.dk] = i.value === '' ? null : parseFloat(i.value); });
+    const diff = [...document.querySelectorAll('.desk-diffrow')].map(r => {
+      const [n, x, y] = r.querySelectorAll('input');
+      return [n.value.trim(), x.value === '' ? null : parseFloat(x.value), y.value === '' ? null : parseFloat(y.value)];
+    }).filter(r => r[0] && r[1] !== null && r[2] !== null);
+    localStorage.setItem('fa_desk:' + orgOf(), JSON.stringify({ ...v, _diff: diff }));
+    const F = (n) => n === null || n === undefined || !isFinite(n) ? null : n;
+    const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
+    const rows = [];   // {name, ok, detail, sig}
+    const tie = (name, l, r, need) => {
+      if (need.some(x => F(x) === null)) { rows.push({ name, skip: true }); return; }
+      const d = l - r;
+      rows.push({ name, ok: Math.abs(d) < 1, detail: Math.abs(d) < 1 ? '일치 (차액 0)' : `불일치 — 차액 ${fmt(d)}원`, exc: Math.abs(d) >= 1 });
+    };
+    tie('① 자산 = 부채 + 자본 (당기)', v.a1, (v.b1 ?? 0) + (v.c1 ?? 0), [v.a1, v.b1, v.c1]);
+    tie('①′ 자산 = 부채 + 자본 (전기)', v.a0, (v.b0 ?? 0) + (v.c0 ?? 0), [v.a0, v.b0, v.c0]);
+    tie('② 당기순이익 산식 (영업이익+영업외수익−영업외비용−법인세)', v.ni1, (v.op1 ?? 0) + (v.nr1 ?? 0) - (v.ne1 ?? 0) - (v.tx1 ?? 0), [v.ni1, v.op1, v.nr1, v.ne1, v.tx1]);
+    tie('③ 현금흐름 (기초+증감 = 기말)', v.cf1, (v.cf0 ?? 0) + (v.cfd ?? 0), [v.cf0, v.cfd, v.cf1]);
+    tie('④ 현금흐름표 기말 = 재무상태표 현금 (당기)', v.cf1, v.ch1, [v.cf1, v.ch1]);
+    diff.forEach(([nm, x, y]) => tie(`⑤ 차이명세서 대사 — ${nm}`, x, y, [x, y]));
+    // 분석적 검토(전기 대비 10%+)
+    const sig = [];
+    const chg = (lb, cur, prev) => {
+      if (F(cur) === null || F(prev) === null || prev === 0) return;
+      const p = (cur - prev) / Math.abs(prev) * 100;
+      if (Math.abs(p) >= 10) sig.push(`${lb}: ${fmt(prev)} → ${fmt(cur)} (${p > 0 ? '+' : ''}${p.toFixed(1)}%) — 원인을 구체적 거래로 확인`);
+    };
+    chg('자산총계', v.a1, v.a0); chg('부채총계', v.b1, v.b0); chg('자본총계', v.c1, v.c0);
+    chg('매출액', v.s1, v.s0); chg('영업이익', v.op1, v.op0); chg('당기순이익', v.ni1, v.ni0); chg('현금', v.ch1, v.ch0);
+    if (F(v.op1) !== null && v.op1 < 0 && F(v.ni1) !== null && v.ni1 > 0) sig.push('영업손실인데 당기순이익 흑자 — 영업외수익 의존 구조(이자수익·환입 등) 내역 확인');
+    // 비율
+    const ratio = [];
+    if (F(v.b1) !== null && F(v.c1) && v.c1 !== 0) { const r = v.b1 / v.c1 * 100; ratio.push(`부채비율 ${r.toFixed(1)}%` + (r > 200 ? ' ⚠ 200% 초과(공기업 집중관리 기준선)' : '')); }
+    if (F(v.ca1) !== null && F(v.cl1) && v.cl1 !== 0) ratio.push(`유동비율 ${(v.ca1 / v.cl1 * 100).toFixed(1)}%`);
+    if (F(v.c1) !== null && v.c1 < 0) ratio.push('⚠ 자본총계 음수 — 자본잠식 신호');
+    // 렌더
+    const done = rows.filter(r => !r.skip), fails = done.filter(r => r.exc);
+    let h = `<h3 class="home-sub">검산 결과 — ${done.length}건 수행 · 불일치 ${fails.length}건</h3>`;
+    h += done.map(r => `<div class="chk desk-r ${r.ok ? '' : 'bad'}"><div class="q">${r.ok ? '✅' : '🚩'} ${esc(r.name)}</div><div class="co-t">${esc(r.detail)}</div>
+      ${r.exc ? `<div class="chips"><button class="chip desk-exc" data-nm="${esc(r.name)}" data-dt="${esc(r.detail)}">＋ 예외로 등록</button></div>` : ''}</div>`).join('');
+    const skipped = rows.filter(r => r.skip).length;
+    if (skipped) h += `<div class="m">· 입력 미완으로 건너뜀 ${skipped}건</div>`;
+    if (sig.length) h += `<h3 class="home-sub">분석적 검토 신호 (전기 대비 10%+ 등)</h3>` + sig.map(s => `<div class="chk"><div class="co-t">📈 ${esc(s)}</div></div>`).join('');
+    if (ratio.length) h += `<h3 class="home-sub">비율</h3><div class="chk"><div class="co-t">${ratio.map(esc).join(' · ')}</div></div>`;
+    h += `<div class="note">신호는 확인 필요 후보입니다 — 원문·증빙 대조 없이 지적하지 마십시오. 불일치는 예외로 등록해 「감사조서·예외 관리」에서 이어가십시오.</div>`;
+    $('#deskOut').innerHTML = h;
+    document.querySelectorAll('.desk-exc').forEach(b => b.addEventListener('click', (e) => {
+      excAdd({ 이름: '판독대: ' + b.dataset.nm, 근거: '결산서 판독대 자동 검산', 내용: b.dataset.dt });
+      e.target.textContent = '✓ 등록됨'; e.target.disabled = true;
+    }));
+    $('#deskOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ═══ 예산과목 사전 (통계목 138 — budget_codes 원문) ═══ */
+  async function renderBudget() {
+    show('budget');
+    const data = await load('kb/budget_codes.json');
+    if (!data) { $('#bgList').innerHTML = LOAD_FAIL; return; }
+    const grps = data.그룹 || [];
+    const q = ($('#bgQ').value || '').trim();
+    const hit = (t) => !q || (t || '').includes(q);
+    let h = '';
+    grps.forEach(g => {
+      const pms = (g.편성목 || []).filter(p => hit(g.명칭) || hit(p.명칭) || hit(p.코드) || (p.통계목 || []).some(t => hit(t.명칭) || hit(t.코드)));
+      if (!pms.length) return;
+      h += `<div class="kb-l1">${esc(g.코드)} ${esc(g.명칭)}</div>`;
+      pms.forEach(p => {
+        h += `<details class="quote-fold" ${q ? 'open' : ''}><summary><b>${esc(p.코드)} ${esc(p.명칭)}</b> · 통계목 ${(p.통계목 || []).length}개</summary>`;
+        (p.통계목 || []).forEach(t => {
+          if (q && !(hit(t.명칭) || hit(t.코드) || hit(p.명칭))) return;
+          h += `<div class="chk"><div class="q">${esc(t.코드)} ${esc(t.명칭)} <span class="b b-lvl">${esc((t.근거 || '').replace(/\[\[|\]\]/g, ''))}</span></div>
+            ${t.정의_원문 ? `<div class="quote">${esc(t.정의_원문)}</div>` : ''}
+            ${(t.편성기준_핵심 || []).length ? `<div class="co-t">${(t.편성기준_핵심 || []).map(x => `<div class="co-li">▸ ${esc(x)}</div>`).join('')}</div>` : ''}</div>`;
+        });
+        if ((p.편성기준_원문요점 || []).length) h += `<div class="m">${(p.편성기준_원문요점 || []).slice(0, 3).map(esc).join(' · ')}</div>`;
+        h += '</details>';
+      });
+    });
+    $('#bgList').innerHTML = h || '<div class="view-p">일치 없음</div>';
+  }
+
   /* ── 진입점·이벤트 ── */
   window.FA_TOOLS = {
     open(tool) {
       if (!orgOf()) { alert('기관유형을 먼저 선택하십시오.'); return; }
-      ({ tie: renderTie, risk: renderRisk, cases: renderCases, tree: renderTree, calc: renderCalc, report: renderReport, kb: renderKb })[tool]();
+      ({ tie: renderTie, risk: renderRisk, cases: renderCases, tree: renderTree, calc: renderCalc, report: renderReport, kb: renderKb, desk: renderDesk, budget: renderBudget })[tool]();
     },
     expandQuery, // 홈 점검항목 검색이 동일 동의어 확장을 사용
   };
@@ -819,6 +949,9 @@
     clearTimeout(kbQT);
     kbQT = setTimeout(async () => { kbPaint(await loadKb()); }, 180);
   });
+  let bgQT = 0;
+  const bgEl = $('#bgQ');
+  if (bgEl) bgEl.addEventListener('input', () => { clearTimeout(bgQT); bgQT = setTimeout(() => { if (dataStore['kb/budget_codes.json']) renderBudget(); }, 200); });
   // C안 토글: 지적례 계정 ↔ 전체 계정
   document.querySelectorAll('#kbMode button').forEach(b => b.addEventListener('click', async () => {
     kbAll = b.dataset.mode === 'all';

@@ -2,7 +2,7 @@
    전략: 앱 셸=stale-while-revalidate(캐시 즉시 서빙+백그라운드 갱신 → 버전 범프 규율 불요)
         데이터(data/*.json)=network-first(오프라인 시 캐시 폴백) */
 'use strict';
-const VERSION = 'fa-v9';
+const VERSION = 'fa-v10';
 const SHELL = [
   './', 'index.html',
   'assets/tokens.css', 'assets/app.css',

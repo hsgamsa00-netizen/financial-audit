@@ -225,3 +225,12 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 /* C안: 전체 계정 모드 — 정의형(basic) 노드 */
 .kb-item.basic b{color:var(--muted)}
 .kb-item.basic.on b{color:var(--ink)}
+
+/* ═══ D2 판독대 ═══ */
+.desk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:8px}
+.desk-f{font-size:var(--text-meta);color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.desk-pair{display:flex;gap:6px}
+.desk-pair input{width:100%;border:1px solid var(--line);border-radius:var(--r-btn);padding:7px 9px;font-family:inherit;background:var(--card);color:var(--ink)}
+.desk-diffrow{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:6px;margin:6px 0}
+.desk-diffrow input{border:1px solid var(--line);border-radius:var(--r-btn);padding:7px 9px;font-family:inherit;background:var(--card);color:var(--ink)}
+.desk-r.bad{border-left:3px solid var(--bad)}
