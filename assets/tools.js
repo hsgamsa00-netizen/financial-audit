@@ -548,16 +548,16 @@
   let kbSel = null;   // 선택 노드 id
   let kbAll = localStorage.getItem('fa_kb_all') === '1';   // C안: 전체 계정 모드 토글
   async function loadKb() {
-    const [tree, rec, cards, eps, laws, defs, adv, pf, nx, af] = await Promise.all([
+    const [tree, rec, cards, eps, laws, defs, adv, pf, nx, af, ez] = await Promise.all([
       load('kb/accounts_tree.json'), load('kb/recipes.json'), load('kb/recipe_cards.json'),
       load('kb/error_patterns.json'), load('kb/law_cards.json'), load('kb/account_defs.json'),
       load('kb/advisor_map.json'), load('kb/practice_findings.json'), load('kb/numeric_examples.json'),
-      load('kb/accounts_full.json')]);
+      load('kb/accounts_full.json'), load('kb/easy_accounts.json')]);
     // 래퍼 관용: 배열이면 그대로, 딕셔너리면 첫 배열 값(한국어 키 '노드'·'매핑' 등 포함)
     const arr = (x) => Array.isArray(x) ? x
       : (x && typeof x === 'object' ? (Object.values(x).find(v => Array.isArray(v) && v.length && typeof v[0] === 'object') || []) : []);
     return { tree: arr(tree), rec: arr(rec), cards: arr(cards),
-      eps: arr(eps), laws: arr(laws), defs: arr(defs), adv: arr(adv), pf: arr(pf), nx: arr(nx), full: arr(af) };
+      eps: arr(eps), laws: arr(laws), defs: arr(defs), adv: arr(adv), pf: arr(pf), nx: arr(nx), full: arr(af), ez: arr(ez) };
   }
   function mergedNodes(kb) {   // C안 병합: 지적례 노드(rich) + 전체 계정(basic·중복 제외)
     if (!kbAll || !kb.full.length) return kb.tree;
@@ -597,6 +597,14 @@
     function add() { let v = mul(); while (peek() === '+' || peek() === '-') { const op = next(); const r = mul(); v = op === '+' ? v + r : v - r; } return v; }
     const out = add();
     return (pos === tokens.length && isFinite(out)) ? out : null;
+  }
+  function easyBlock(nodeId, kb, ids) {   // 🧑‍💼 AI 회계사의 쉬운 설명(재해석·AI 라벨 구분)
+    const e = (kb.ez || []).find(x => ids.includes(x.id));
+    if (!e) return '';
+    return `<div class="easy-box"><div class="q">🧑‍💼 AI 회계사의 쉬운 설명 <span class="b b-lvl">AI 설명 — 원문 아님</span></div>
+      <div class="co-t">${esc(e.쉬운설명 || '')}</div>
+      ${e.구체예시 ? `<div class="easy-ex">예시: ${esc(e.구체예시)}</div>` : ''}
+      ${e.감사포인트 ? `<div class="rule">감사 포인트: ${esc(e.감사포인트)}</div>` : ''}</div>`;
   }
   function numericBlock(r, kb) {   // 🔢 숫자로 검증하기(조합안: 따라하기+실사례+계산기)
     const nx = (kb.nx || []).find(x => x.recipe_id === r.id);
@@ -721,19 +729,29 @@
       const a = node.def || {};
       const sibs = kb.tree.filter(t => (t.경로 || [])[1] === (node.경로 || [])[1]).slice(0, 6);
       box.innerHTML = `<div class="kb-crumb">${(node.경로 || []).map(esc).join(' › ')} › <b>${esc(node.명칭)}</b> <span class="b b-lvl">계정 정의</span></div>
+        ${easyBlock(node.id, kb, [node.id])}
         <div class="chk"><div class="q">📖 ${esc(node.명칭)} — 표준계정과목 해설서 <span class="b b-lvl">${esc((a.출처 || '').replace(/\[\[|\]\]/g, ''))}</span></div>
         <div class="quote">${esc(fmtBreaks(a.정의_원문 || ''))}</div>
         ${a.유의사항_원문 ? `<h4 class="co-h">회계처리 유의사항</h4><div class="quote">${esc(fmtBreaks(a.유의사항_원문))}</div>` : ''}</div>
         <div class="view-p">이 계정의 지적 레시피는 아직 없습니다 — 관련 사례와 같은 분류의 지적례 계정을 참고하십시오.</div>
-        <div class="btnbar"><button class="btn line" data-go-cases="${esc((node.case_kw || [node.명칭])[0])}">📚 관련 사례 검색 — "${esc((node.case_kw || [node.명칭])[0])}"</button></div>
+        <div class="btnbar"><button class="btn line" data-go-kws="${esc((node.case_kw || [node.명칭]).join('|'))}">📚 관련 사례 검색</button></div>
         ${sibs.length ? `<h3 class="home-sub">같은 분류의 지적례 계정</h3>` + sibs.map(s => `<button class="kb-case" data-sib="${esc(s.id)}">▸ ${esc(s.명칭)} <span class="b b-lvl">레시피 ${(s.recipe_ids || []).length}</span></button>`).join('') : ''}`;
       box.querySelectorAll('[data-sib]').forEach(b => b.addEventListener('click', () => { kbSel = b.dataset.sib; kbPaint(kb); }));
-      box.querySelectorAll('[data-go-cases]').forEach(b => b.addEventListener('click', () => {
-        renderCases().then(() => { const q2 = $('#caseQ'); q2.value = b.dataset.goCases; q2.dispatchEvent(new Event('input')); });
+      box.querySelectorAll('[data-go-kws]').forEach(b => b.addEventListener('click', () => {
+        renderCases().then(() => {
+          const all = dataStore['cases_fin.json'] || [];
+          const kws = (b.dataset.goKws || '').split('|').filter(Boolean);
+          const kw = kws.find(k => all.some(c => c.t.includes(k))) || kws[0] || '';
+          const q2 = $('#caseQ'); q2.value = kw; q2.dispatchEvent(new Event('input'));
+        });
       }));
       return;
     }
     let h = `<div class="kb-crumb">${(node.경로 || []).map(esc).join(' › ')} › <b>${esc(node.명칭)}</b></div>`;
+    const toks = node.명칭.split('·').map(x => x.trim()).filter(x => x.length >= 2);
+    const ezIds = kb.full.filter(a => a.기존노드_id === node.id
+      || toks.some(t => a.명칭.includes(t) || t.includes(a.명칭))).map(a => a.id);
+    h += easyBlock(node.id, kb, ezIds);
     // 계정 정의(해설서 원문) — 상단 접기
     const def = kb.defs.find(d => node.명칭.includes(d.계정) || (d.계정 || '').includes(node.명칭.split('·')[0]));
     if (def) h += `<details class="quote-fold"><summary>📖 계정 정의 — ${esc(def.계정)} <span class="b b-lvl">${esc((def.출처 || '').replace(/\[\[|\]\]/g, ''))}</span></summary><div class="quote">${esc(fmtBreaks(def.정의_원문 || ''))}${def.유의사항_원문 ? '<hr>' + esc(fmtBreaks(def.유의사항_원문)) : ''}</div></details>`;

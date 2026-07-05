@@ -252,3 +252,8 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 .tb-g:first-child{margin-left:0}
 @media (max-width:760px){.main2{grid-template-columns:1fr}}
 .co-li{white-space:pre-line}
+
+/* AI 회계사의 쉬운 설명 박스 */
+.easy-box{border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:var(--r-card);padding:12px 14px;margin:8px 0}
+.easy-box .q{margin-bottom:6px}
+.easy-ex{background:var(--card);border-radius:var(--r-chip);padding:8px 12px;margin-top:6px;font-size:var(--text-sm);line-height:1.65}
