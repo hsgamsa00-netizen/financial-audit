@@ -193,7 +193,14 @@
       </div>
       <div class="m">🛡️ ${esc(icNote)} <button class="chip" data-go-ic type="button">내부통제 예비평가 열기</button></div>
       <div class="rule" data-ar-out></div>
-    </div>`;
+    </div>
+    <div class="chk"><div class="q">기관유형별 위험 프로파일 (선례 집계)</div>
+      <div class="rule">${esc(({
+        '지자체': '일반회계 내부통제 위험의 60.1%가 국유(공유)재산 관리에 집중 — 유형자산·사회기반시설, 보조금 정산부터 보십시오.',
+        '지방공기업': '기업회계 프로파일 — 선례상 유형자산(허용오류 초과의 31.8%)·충당부채(평가·추정의 29.3%)·판매비와관리비가 오류 다발 계정입니다.',
+        '출자·출연기관': '기금형 프로파일 — 연금·퇴직 충당부채, 장기투자증권(평가·감액손실)이 선례상 위험 계정입니다.',
+      })[orgOf()] || '')}</div>
+      <div class="m">출처: 감사연구원 2013(2011회계연도 결산검사 실증) — 검사자원 배분 참고용이며 처분 근거가 아닙니다.</div></div>`;
     const gic = w.querySelector('[data-go-ic]');
     if (gic) gic.addEventListener('click', () => { if (window.FA.openCheck) window.FA.openCheck('내부통제'); });
     const arOut = w.querySelector('[data-ar-out]');
@@ -566,7 +573,7 @@
       md += '\n';
     }
     md += `## 발견사항 4갈래 분류 안내\n각 발견사항을 아래 4갈래 중 어디에 둘지 먼저 정하십시오(처분수위 판단트리 Q0 참조):\n① 재무제표 신뢰성 → 수정분개·재작성 요구 검토\n② 내부통제 취약성 → 「중대한 취약성 / 기타 개선 필요」 구분 후 개선요구·권고\n③ 위법·부당 → 처분요구서 골격 사용\n④ 관리상 개선 → 관리서한 골격 사용\n\n## 처분요구서 골격(실무 보고서 5단 구조 — 빈칸 프레임)\n지적 후보를 처분요구서로 발전시킬 때 아래 구조 사용(타 기관 재무감사 결과보고서 추출 표준):\n1. 업무 개요: (기재)\n2. 관련 내규·판단기준: (조문 원문 인용)\n3. 문제점(사실관계·차이·영향): (수치는 원문 대조 후)\n4. 관계부서 의견: (기재)\n5. 조치할 사항: (조치권한자를 주어로·명사형 종결)\n\n## 관리서한(개선 권고) 골격 — 처분요구에 이르지 않는 관리상 개선사항\n1. 현황: (기재)\n2. 개선이 필요한 사유(위험): (기재)\n3. 권고 사항: (기재 — 조치계획 회신 요청)\n\n`;
-    md += `## 유의사항\n- 본 초안은 합리적 확신 수준의 점검 보조 자료이며 처분·지적 확정이 아님.\n- 인용 수치·조문은 원문과 대조 후 사용할 것.\n`;
+    md += `## 조서 셀프리뷰 체크(제출 전 10항)\n- [ ] 결론마다 근거 증거가 연결되어 있는가 (주장만 있는 결론 없음)\n- [ ] 인용한 수치·조문을 원문과 대조했는가\n- [ ] 재계산·재수행을 실제로 했는가 (계산 결과 기록)\n- [ ] 표본을 어떻게 뽑았는지(범위·방법) 기록했는가\n- [ ] 발견사항의 4갈래 분류(①재무제표 ②내부통제 ③위법·부당 ④관리개선)를 정했는가\n- [ ] 반론·책임조각사유를 검토·기록했는가\n- [ ] 관계부서 의견을 들었는가\n- [ ] 실명·개인정보 마스킹을 확인했는가\n- [ ] 미종결 관찰을 「차기이월」로 남겼는가\n- [ ] 제3자가 이 조서만 읽고 재현할 수 있는가 (문서화 충분성 — 위험평가·문서화는 동료평가의 단골 지적)\n\n## 유의사항\n- 본 초안은 합리적 확신 수준의 점검 보조 자료이며 처분·지적 확정이 아님.\n- 인용 수치·조문은 원문과 대조 후 사용할 것.\n`;
     outputTo('감사조서초안', md);
   }
 
@@ -805,6 +812,7 @@
       return;
     }
     let h = `<div class="kb-crumb">${(node.경로 || []).map(esc).join(' › ')} › <b>${esc(node.명칭)}</b></div>`;
+    if (node.선례신호) h += `<div class="m">📊 선례 신호: ${esc(node.선례신호.문구)} <span class="b b-lvl">선례 집계 — 예측 아님</span> <span class="b b-lvl">${esc(node.선례신호.출처)}</span></div>`;
     const toks = node.명칭.split('·').map(x => x.trim()).filter(x => x.length >= 2);
     const ezIds = kb.full.filter(a => a.기존노드_id === node.id
       || toks.some(t => a.명칭.includes(t) || t.includes(a.명칭))).map(a => a.id);
@@ -916,7 +924,9 @@
         <div class="fld"><label>비율(%) — 직접 입력</label><input type="number" step="any" data-dk="mp" value="${saved.mp ?? ''}"></div>
       </div>
       <div class="rule" id="matOut"></div>
-      <div class="m">공공부문 중요성 비율은 확정 규범이 없어 직접 입력합니다(민간 실무 관행 예시: 총자산의 0.5–2% 등). 산출값은 검사범위 판단 참고치이며 <b>지적·처분의 면책 기준이 아닙니다</b>. 금액이 작아도 질적으로 중요한 사안(이용자 오도·공익 민감·반복 오류)은 별도 검토하십시오.</div></div></details>`;
+      <div class="m">공공부문 중요성 비율은 확정 규범이 없어 직접 입력합니다(민간 실무 관행 예시: 총자산의 0.5–2% 등). 산출값은 검사범위 판단 참고치이며 <b>지적·처분의 면책 기준이 아닙니다</b>. 금액이 작아도 질적으로 중요한 사안(이용자 오도·공익 민감·반복 오류)은 별도 검토하십시오.</div></div></details>`
+    + `<div class="chk"><div class="q">F. 기대치 대비(선택) — 예산·사업계획 등 기대치와 결산액 비교 <span class="b b-lvl">분석적 검토 4단계: ①기대치 ②한계치 ③차이 ④해석</span></div>
+      <div id="deskExp"></div><button class="btn line" id="deskExpAdd" type="button">+ 항목 추가</button></div>`;
     const dd = $('#deskDiff');
     const addRow = (nm, v1, v2) => {
       const row = document.createElement('div'); row.className = 'desk-diffrow';
@@ -928,6 +938,17 @@
     (saved._diff || [[], []]).length ? (saved._diff || []).forEach(r => addRow(r[0], r[1], r[2])) : null;
     if (!dd.children.length) { addRow(); addRow(); }
     $('#deskDiffAdd').onclick = () => addRow();
+    const de = $('#deskExp');
+    const addRowE = (nm, v1, v2) => {
+      const row = document.createElement('div'); row.className = 'desk-diffrow';
+      row.innerHTML = `<input type="text" placeholder="항목명(예: 사업수익)" value="${esc(nm || '')}">
+        <input type="number" step="any" placeholder="결산액" value="${v1 ?? ''}">
+        <input type="number" step="any" placeholder="기대치(예산·계획)" value="${v2 ?? ''}">`;
+      de.appendChild(row);
+    };
+    (saved._exp || []).forEach(r => addRowE(r[0], r[1], r[2]));
+    if (!de.children.length) addRowE();
+    $('#deskExpAdd').onclick = () => addRowE();
     const matCalc = () => {
       const mb = parseFloat(($('#deskForm [data-dk="mb"]') || {}).value), mp = parseFloat(($('#deskForm [data-dk="mp"]') || {}).value);
       const out = $('#matOut');
@@ -944,11 +965,13 @@
   function runDesk() {
     const v = {};
     document.querySelectorAll('#deskForm [data-dk]').forEach(i => { v[i.dataset.dk] = i.value === '' ? null : parseFloat(i.value); });
-    const diff = [...document.querySelectorAll('.desk-diffrow')].map(r => {
+    const readRows = (sel) => [...document.querySelectorAll(sel + ' .desk-diffrow')].map(r => {
       const [n, x, y] = r.querySelectorAll('input');
       return [n.value.trim(), x.value === '' ? null : parseFloat(x.value), y.value === '' ? null : parseFloat(y.value)];
     }).filter(r => r[0] && r[1] !== null && r[2] !== null);
-    localStorage.setItem('fa_desk:' + orgOf(), JSON.stringify({ ...v, _diff: diff }));
+    const diff = readRows('#deskDiff');
+    const exp = readRows('#deskExp');
+    localStorage.setItem('fa_desk:' + orgOf(), JSON.stringify({ ...v, _diff: diff, _exp: exp }));
     const F = (n) => n === null || n === undefined || !isFinite(n) ? null : n;
     const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
     const rows = [];   // {name, ok, detail, sig}
@@ -975,6 +998,11 @@
     };
     chg('자산총계', v.a1, v.a0); chg('부채총계', v.b1, v.b0); chg('자본총계', v.c1, v.c0);
     chg('매출액', v.s1, v.s0); chg('영업이익', v.op1, v.op0); chg('당기순이익', v.ni1, v.ni0); chg('현금', v.ch1, v.ch0);
+    exp.forEach(([nm, res, ev]) => {
+      if (ev === 0) return;
+      const d2 = res - ev, p2 = d2 / Math.abs(ev) * 100;
+      if (Math.abs(p2) >= 10 || (mat !== null && Math.abs(d2) >= mat)) sig.push(`${nm}(기대치 대비): 기대 ${fmt(ev)} → 결산 ${fmt(res)} (${p2 > 0 ? '+' : ''}${p2.toFixed(1)}%) — 차이 원인을 해석·기록`);
+    });
     if (F(v.op1) !== null && v.op1 < 0 && F(v.ni1) !== null && v.ni1 > 0) sig.push('영업손실인데 당기순이익 흑자 — 영업외수익 의존 구조(이자수익·환입 등) 내역 확인');
     // 비율
     const ratio = [];
@@ -989,12 +1017,24 @@
     const skipped = rows.filter(r => r.skip).length;
     if (skipped) h += `<div class="m">· 입력 미완으로 건너뜀 ${skipped}건</div>`;
     const hasPrev = [v.a0, v.b0, v.c0, v.s0, v.op0, v.ni0, v.ch0].some(x => F(x) !== null);
-    if (sig.length) h += `<h3 class="home-sub">분석적 검토 신호 (전기 대비 10%${mat !== null ? ' 또는 중요성 금액' : ''} 이상)</h3>` + sig.map(s => `<div class="chk"><div class="co-t">📈 ${esc(s)}</div></div>`).join('');
+    const noteKey = 'fa_desknote:' + orgOf();
+    let sigNotes = {};
+    try { sigNotes = JSON.parse(localStorage.getItem(noteKey) || '{}'); } catch { /* 초기값 */ }
+    if (sig.length) h += `<h3 class="home-sub">분석적 검토 신호 (전기 대비 10%${mat !== null ? ' 또는 중요성 금액' : ''} 이상)</h3>` + sig.map(s => {
+      const k = s.split(':')[0];
+      return `<div class="chk"><div class="co-t">📈 ${esc(s)}</div><input class="doc-in" data-signote="${esc(k)}" placeholder="④ 해석 — 차이 원인 설명(증빙 확인 후 기록)" value="${esc(sigNotes[k] || '')}"></div>`;
+    }).join('');
     else if (hasPrev) h += `<h3 class="home-sub">분석적 검토 신호</h3><div class="chk"><div class="co-t">전기 대비 10% 이상 변동 없음</div></div>`;
     if (hasPrev) h += `<div class="m">※ ±10%는 관행적 초기 스크린입니다 — 신호가 없어도 문제가 없다는 뜻이 아니며, 금액이 작아도 질적으로 중요한 사안(채용·수당·반복 오류 등)은 별도 검토가 필요합니다(개념 온보딩 「중요성」 참조).</div>`;
     if (ratio.length) h += `<h3 class="home-sub">비율</h3><div class="chk"><div class="co-t">${ratio.map(esc).join(' · ')}</div></div>`;
     h += `<div class="note">신호는 확인 필요 후보입니다 — 원문·증빙 대조 없이 지적하지 마십시오. 불일치는 예외로 등록해 「감사조서·예외 관리」에서 이어가십시오. <b>검산이 모두 일치해도 「적정」을 뜻하지 않습니다</b> — 이 검사는 결산서 내부 정합만 보며, 장부 대 외부증빙 대사(예금 잔고증명 등)는 별도로 수행해야 합니다.</div>`;
     $('#deskOut').innerHTML = h;
+    document.querySelectorAll('#deskOut [data-signote]').forEach(inp => inp.addEventListener('change', () => {
+      let ns = {};
+      try { ns = JSON.parse(localStorage.getItem(noteKey) || '{}'); } catch { /* 초기값 */ }
+      ns[inp.dataset.signote] = inp.value;
+      localStorage.setItem(noteKey, JSON.stringify(ns));
+    }));
     document.querySelectorAll('.desk-exc').forEach(b => b.addEventListener('click', (e) => {
       excAdd({ 이름: '판독대: ' + b.dataset.nm, 근거: '결산서 판독대 자동 검산', 내용: b.dataset.dt });
       e.target.textContent = '✓ 등록됨'; e.target.disabled = true;

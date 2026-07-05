@@ -173,6 +173,29 @@ function renderCheck(mod) {
     if (el) el.closest('.chk').scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
   list.appendChild(head);
+  if (mod === '내부통제') {
+    // 감사원 가이드라인(2023.10) 원문 발췌 — 지연 로딩
+    const gl = document.createElement('details');
+    gl.className = 'gate-cmp';
+    gl.innerHTML = '<summary>📚 감사원 「공공부문 내부통제 가이드라인」(2023.10) — 5요소 17원칙 원문 발췌</summary><div class="chk" data-gl>불러오는 중…</div>';
+    let glLoaded = false;
+    gl.addEventListener('toggle', () => {
+      if (!gl.open || glLoaded) return;
+      glLoaded = true;
+      fetch('data/kb/ic_guideline.json').then(r => r.ok ? r.json() : null).then(d => {
+        const box = gl.querySelector('[data-gl]');
+        if (!d) { box.textContent = '불러오기 실패 — 네트워크 확인 후 다시 여십시오.'; glLoaded = false; return; }
+        box.innerHTML = (d.요소순서 || []).map(el =>
+          `<div class="kb-l1">${esc(el)}</div>` + (d.원칙 || []).filter(p => p.요소 === el).map(p =>
+            `<details class="quote-fold"><summary>${esc(p.제목)}</summary>
+              <div class="quote">${(p.세부원칙 || []).map(esc).join('\n')}</div>
+              ${(p.핵심체크리스트 || []).length ? `<div class="co-t">${p.핵심체크리스트.map(c => `<div class="co-li">• ${esc(c)}</div>`).join('')}</div>` : ''}
+            </details>`).join('')).join('')
+          + `<div class="m">${esc(d.비고 || '')} · 출처: ${esc(d.출처 || '')}</div>`;
+      }).catch(() => { glLoaded = false; });
+    });
+    list.appendChild(gl);
+  }
   items.forEach(it => {
     const r = resp[it.id] || {};
     const d = document.createElement('div');
