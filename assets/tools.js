@@ -717,7 +717,8 @@
       ${stepH('필요자료', (r['3_확인자료'] || []).map(x => `<span class="b b-ev">${esc(x)}</span>`).join(' '))}
       ${stepH('검증 테스트', (c.검증테스트 || []).map(t => `<div class="kb-test"><b>▶ ${esc(t.이름)}</b><div class="co-t">${esc(t.규칙 || '')}</div>${t.오탐주의 ? `<div class="m">⚠ 오탐주의: ${esc(t.오탐주의)}</div>` : ''}</div>`).join('') || esc(r['4_재계산절차'] || ''))}
       ${numericBlock(r, kb)}
-      ${stepH('대표 오류패턴', eps2.slice(0, 4).map(p => `<div class="co-li">▸ ${esc(p.패턴)}${p.재무제표영향 ? ` <span class="b b-lvl">${esc(p.재무제표영향)}</span>` : ''}</div>`).join(''))}
+      <div class="layer3-cap">③ 근거·심화 — 필요할 때 펼치세요</div>
+      ${eps2.length ? `<details class="quote-fold"><summary>🚩 대표 오류패턴 (${eps2.length})</summary>${eps2.map(p => `<div class="co-li">▸ ${esc(p.패턴)}${p.재무제표영향 ? ` <span class="b b-lvl">${esc(p.재무제표영향)}</span>` : ''}</div>`).join('')}</details>` : ''}
       ${r['7_문안골격'] ? `<details class="quote-fold"><summary>📋 조서 문안 골격(빈칸 프레임)</summary><div class="quote">${esc(r['7_문안골격'])}</div><div class="m">※ 자동 작성 아님 — 사실·수치·기준을 원문 대조 후 채우십시오.</div></details>` : ''}
       <details class="quote-fold"><summary>📚 상세 근거 펼치기 (성립요건·기준조문·판단·선례)</summary>${recipeFull(r, kb)}</details>
     </div>`;
@@ -764,13 +765,10 @@
     const inRec = new Set(recs.flatMap(r => (r['2_오류패턴'] || []).map(p => p.ep_id)));
     const eps = (node.ep_ids || []).map(id => kb.eps.find(p => p.id === id)).filter(p => p && !inRec.has(p.id));
     if (eps.length) {
-      h += `<h3 class="home-sub">추가 오류패턴 (${eps.length})</h3>`;
-      eps.forEach(p => {
-        h += `<div class="chk"><div class="q">${esc(p.제목)} <span class="b b-lvl">${esc(p.오류유형 || '')}</span></div>
+      h += `<details class="quote-fold"><summary>🚩 추가 오류패턴 (${eps.length})</summary>` + eps.map(p => `<div class="chk"><div class="q">${esc(p.제목)} <span class="b b-lvl">${esc(p.오류유형 || '')}</span></div>
           <div class="co-t">${esc(p.지적요지_원문 || '')}</div>
           ${p.확인방법 ? `<div class="rule">확인: ${esc(p.확인방법)}</div>` : ''}
-          <div class="m">출처: ${esc(p.출처 || '')}</div></div>`;
-      });
+          <div class="m">출처: ${esc(p.출처 || '')}</div></div>`).join('') + `</details>`;
     }
     // 실무 지적례(타 기관 재무감사 결과 — ★2025 등에서 역산)
     const kws = [node.명칭.split('·')[0], ...(node.case_kw || [])].filter(k => k && k.length >= 2);
@@ -779,14 +777,11 @@
       return kws.some(k => hay.includes(k));
     }).slice(0, 5);
     if (pfs.length) {
-      h += `<h3 class="home-sub">실무 지적례 — 타 기관 재무감사 (${pfs.length})</h3>`;
-      pfs.forEach(p => {
-        h += `<div class="chk"><div class="q">${esc(p.제목)} <span class="b b-lvl">${esc(p.구분 || '')}</span></div>
+      h += `<details class="quote-fold"><summary>🏛 실무 지적례 — 타 기관 재무감사 (${pfs.length})</summary>` + pfs.map(p => `<div class="chk"><div class="q">${esc(p.제목)} <span class="b b-lvl">${esc(p.구분 || '')}</span></div>
           <div class="co-t">${esc(p.내용_요지 || '')}</div>
           ${p.검증방법_역산 ? `<div class="rule">어떻게 발견했나: ${esc(p.검증방법_역산)}</div>` : ''}
           ${(p.필요했던_자료 || []).length ? `<div class="m">쓰인 자료: ${(p.필요했던_자료 || []).map(x => `<span class="b b-ev">${esc(x)}</span>`).join(' ')}</div>` : ''}
-          <div class="m">출처: ${esc(p.출처 || '')}</div></div>`;
-      });
+          <div class="m">출처: ${esc(p.출처 || '')}</div></div>`).join('') + `</details>`;
     }
     // 관련 사례
     if ((node.case_kw || []).length) h += `<div class="btnbar"><button class="btn line" data-go-cases="${esc((node.case_kw || [])[0])}">📚 관련 사례 보기 — "${esc((node.case_kw || [])[0])}"</button></div>`;

@@ -257,3 +257,4 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 .easy-box{border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:var(--r-card);padding:12px 14px;margin:8px 0}
 .easy-box .q{margin-bottom:6px}
 .easy-ex{background:var(--card);border-radius:var(--r-chip);padding:8px 12px;margin-top:6px;font-size:var(--text-sm);line-height:1.65}
+.layer3-cap{margin-top:14px;padding-top:8px;border-top:1px dashed var(--line);color:var(--muted2);font-size:var(--text-meta)}
