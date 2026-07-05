@@ -734,7 +734,7 @@
         <div class="chk"><div class="q">📖 ${esc(node.명칭)} — 표준계정과목 해설서 <span class="b b-lvl">${esc((a.출처 || '').replace(/\[\[|\]\]/g, ''))}</span></div>
         <div class="quote">${esc(fmtBreaks(a.정의_원문 || ''))}</div>
         ${a.유의사항_원문 ? `<h4 class="co-h">회계처리 유의사항</h4><div class="quote">${esc(fmtBreaks(a.유의사항_원문))}</div>` : ''}</div>
-        <div class="view-p">이 계정의 지적 레시피는 아직 없습니다 — 관련 사례와 같은 분류의 지적례 계정을 참고하십시오.</div>
+        <div class="view-p">이 계정은 심화 검증 콘텐츠(레시피)가 아직 없습니다 — 도구가 잡아주지 못하는 영역(적발위험)이 상대적으로 크므로, 관련 사례·같은 분류의 지적례 계정을 참고하고 원장 열람·외부확인으로 보완하십시오.</div>
         <div class="btnbar"><button class="btn line" data-go-kws="${esc((node.case_kw || [node.명칭]).join('|'))}">📚 관련 사례 검색</button></div>
         ${sibs.length ? `<h3 class="home-sub">같은 분류의 지적례 계정</h3>` + sibs.map(s => `<button class="kb-case" data-sib="${esc(s.id)}">▸ ${esc(s.명칭)} <span class="b b-lvl">레시피 ${(s.recipe_ids || []).length}</span></button>`).join('') : ''}`;
       box.querySelectorAll('[data-sib]').forEach(b => b.addEventListener('click', () => { kbSel = b.dataset.sib; kbPaint(kb); }));
@@ -785,7 +785,7 @@
     }
     // 관련 사례
     if ((node.case_kw || []).length) h += `<div class="btnbar"><button class="btn line" data-go-cases="${esc((node.case_kw || [])[0])}">📚 관련 사례 보기 — "${esc((node.case_kw || [])[0])}"</button></div>`;
-    if (!recs.length && !eps.length) h += '<div class="view-p">이 계정의 검증 레시피는 준비 중입니다 — 계정 정의·관련 사례를 참고하십시오.</div>';
+    if (!recs.length && !eps.length) h += '<div class="view-p">이 계정의 검증 레시피는 준비 중입니다 — 도구의 심화 검증이 미치지 않는 계정이므로 계정 정의·관련 사례를 참고하고 원장 열람·외부확인으로 보완하십시오.</div>';
     box.innerHTML = h;
     box.querySelectorAll('.kb-case').forEach(b => b.addEventListener('click', async () => {
       const all = dataStore['cases_fin.json'] || await load('cases_fin.json');
@@ -826,7 +826,7 @@
       <div class="q">🧑‍💼 <b>${esc(a.추정계정 || a.증상)}</b> 관련으로 보입니다</div>
       ${(a.먼저볼자료 || []).length ? `<div class="m">먼저 볼 자료: ${(a.먼저볼자료 || []).map(x => `<span class="b b-ev">${esc(x)}</span>`).join(' ')}</div>` : ''}
       ${(a.추천검증 || []).length ? `<div class="m">추천 검증: ${(a.추천검증 || []).map(esc).join(' · ')}</div>` : ''}
-      <div class="chips"><button class="chip" data-adv-node="${esc(a.노드 || '')}">📒 검증 카드 열기</button></div>
+      ${a.노드 ? `<div class="chips"><button class="chip" data-adv-node="${esc(a.노드)}">📒 검증 카드 열기</button></div>` : ''}
     </div>`).join('');
     out.querySelectorAll('[data-adv-node]').forEach(b => b.addEventListener('click', () => { if (b.dataset.advNode) renderKb(b.dataset.advNode); }));
   }
@@ -911,9 +911,12 @@
       ${r.exc ? `<div class="chips"><button class="chip desk-exc" data-nm="${esc(r.name)}" data-dt="${esc(r.detail)}">＋ 예외로 등록</button></div>` : ''}</div>`).join('');
     const skipped = rows.filter(r => r.skip).length;
     if (skipped) h += `<div class="m">· 입력 미완으로 건너뜀 ${skipped}건</div>`;
+    const hasPrev = [v.a0, v.b0, v.c0, v.s0, v.op0, v.ni0, v.ch0].some(x => F(x) !== null);
     if (sig.length) h += `<h3 class="home-sub">분석적 검토 신호 (전기 대비 10%+ 등)</h3>` + sig.map(s => `<div class="chk"><div class="co-t">📈 ${esc(s)}</div></div>`).join('');
+    else if (hasPrev) h += `<h3 class="home-sub">분석적 검토 신호</h3><div class="chk"><div class="co-t">전기 대비 10% 이상 변동 없음</div></div>`;
+    if (hasPrev) h += `<div class="m">※ ±10%는 관행적 초기 스크린입니다 — 신호가 없어도 문제가 없다는 뜻이 아니며, 금액이 작아도 질적으로 중요한 사안(채용·수당·반복 오류 등)은 별도 검토가 필요합니다(개념 온보딩 「중요성」 참조).</div>`;
     if (ratio.length) h += `<h3 class="home-sub">비율</h3><div class="chk"><div class="co-t">${ratio.map(esc).join(' · ')}</div></div>`;
-    h += `<div class="note">신호는 확인 필요 후보입니다 — 원문·증빙 대조 없이 지적하지 마십시오. 불일치는 예외로 등록해 「감사조서·예외 관리」에서 이어가십시오.</div>`;
+    h += `<div class="note">신호는 확인 필요 후보입니다 — 원문·증빙 대조 없이 지적하지 마십시오. 불일치는 예외로 등록해 「감사조서·예외 관리」에서 이어가십시오. <b>검산이 모두 일치해도 「적정」을 뜻하지 않습니다</b> — 이 검사는 결산서 내부 정합만 보며, 장부 대 외부증빙 대사(예금 잔고증명 등)는 별도로 수행해야 합니다.</div>`;
     $('#deskOut').innerHTML = h;
     document.querySelectorAll('.desk-exc').forEach(b => b.addEventListener('click', (e) => {
       excAdd({ 이름: '판독대: ' + b.dataset.nm, 근거: '결산서 판독대 자동 검산', 내용: b.dataset.dt });
