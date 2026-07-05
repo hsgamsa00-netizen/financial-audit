@@ -2,12 +2,13 @@
    원천: 감사 길잡이(https://hsgamsa00-netizen.github.io/Giljabi/) styles.css :root (KRDS 정렬)
    원칙: accent #0054A6 유지 · 경중 색축 · 타이포 8단계 · Pretendard GOV 400/700 */
 :root{
-  --bg:#f4f5f6;--card:#fff;--ink:#1e2124;--muted:#5b636c;--line:#e6e8ea;--soft:#eef1f4;--line-strong:#cdd1d5;  /* KRDS Grayscale */
+  /* One UI(갤럭시 설정) 팔레트 정렬(2026-07-05): 연회색 배경 + 무테두리 흰 카드 + 풀라운드 */
+  --bg:#f1f1f6;--card:#fff;--ink:#1a1c1e;--muted:#5b636c;--line:#ebebf0;--soft:#f2f2f7;--line-strong:#cdd1d5;
   --accent:#0054A6;--accent-soft:#eaf1f9;--accent-line:#bcd2e8;
   --good:#267337;--good-soft:#e7f4ea;--warn:#8a5c00;--warn-soft:#fdf4e3;
-  --bad:#bd2c0f;--bad-soft:#fceae6;--info:#096ab3;--info-soft:#e6f1fa;--muted2:#6b7480; /* KRDS System(Role) */
-  --radius:12px;--shadow:0 1px 2px rgba(17,24,39,.05),0 6px 18px rgba(17,24,39,.06);
-  --r-chip:6px;--r-btn:8px;--r-card:12px; /* KRDS Shape */
+  --bad:#bd2c0f;--bad-soft:#fceae6;--info:#096ab3;--info-soft:#e6f1fa;--muted2:#77808a; /* KRDS System(Role) */
+  --radius:24px;--shadow:0 1px 2px rgba(17,24,39,.03);
+  --r-chip:10px;--r-btn:14px;--r-card:24px; /* One UI Shape: 대카드 24 · 입력 14 · 소태그 10 */
   --text-meta:12px;--text-sm:13px;--text-body:15px;--text-body-lg:17px;--text-h3:18px;--text-h2:21px;--text-h1:26px;--text-display:34px;
   --leading-tight:1.35;--leading-body:1.65;--tracking-tight:-.01em;
   --read-max:68ch;
@@ -38,11 +39,12 @@
 
 /* ── 다크 모드(토글 선택·기본=OS 설정) — 대비 유지: 본문 텍스트 AA 이상 ── */
 [data-theme="dark"]{
-  --bg:#14171b;--card:#1d2228;--ink:#e7eaee;--muted:#a0aab5;--line:#343c45;--soft:#272e35;--line-strong:#4a545f;
-  --accent:#66aae8;--accent-soft:#1a2a3c;--accent-line:#2f4a68;
+  /* One UI 다크: 흑색 배경 + 짙은 회색 카드 */
+  --bg:#050505;--card:#17181c;--ink:#e9eaee;--muted:#a0aab5;--line:#2b2c33;--soft:#26272e;--line-strong:#4a545f;
+  --accent:#6db1f2;--accent-soft:#182a3e;--accent-line:#2f4a68;
   --good:#63bf7e;--good-soft:#15281b;--warn:#d9a94a;--warn-soft:#2c2413;
   --bad:#e2705c;--bad-soft:#321a15;--info:#5fa8dd;--info-soft:#14283a;--muted2:#8b95a1;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  --shadow:0 1px 2px rgba(0,0,0,.35);
   --sev-grave:#d98d84;--sev-grave-soft:#33201d;--sev-grave-line:#57332e;
   --sev-admin:#9fb0c2;--sev-admin-soft:#242b33;--sev-admin-line:#3c4650;
   --sev-etc:#8a94a0;--sev-etc-soft:#232930;--sev-etc-line:var(--line);

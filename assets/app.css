@@ -258,3 +258,123 @@ table.xt input,table.xt select{border:1px solid var(--line);border-radius:var(--
 .easy-box .q{margin-bottom:6px}
 .easy-ex{background:var(--card);border-radius:var(--r-chip);padding:8px 12px;margin-top:6px;font-size:var(--text-sm);line-height:1.65}
 .layer3-cap{margin-top:14px;padding-top:8px;border-top:1px dashed var(--line);color:var(--muted2);font-size:var(--text-meta)}
+
+/* ═══════════════════════════════════════════════════════════════
+   One UI(갤럭시 설정) 리프레시 오버라이드 — 2026-07-05
+   원칙: 연회색 배경 위 무테두리 흰 카드(radius 24) · 풀라운드 필 버튼 ·
+        채움형 입력 · 섹션 캡션(작은 회색)으로 위상 구분 · 값 강조=파랑
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 헤더: 배경과 한 몸(카드 아님) + 큰 제목 */
+.hd{background:var(--bg);border-bottom:0;padding:16px 22px 8px}
+.hd-title{color:var(--ink);font-size:20px;letter-spacing:-.01em}
+.hd-sub{color:var(--muted2)}
+.theme-btn{border:0;background:var(--card);width:38px;height:38px;box-shadow:var(--shadow)}
+.org-chip{border:0;background:var(--card);box-shadow:var(--shadow)}
+
+/* 뷰 제목: One UI 대제목 + 아래 본문 여백 */
+main{max-width:1040px}
+main h2{font-size:27px;font-weight:700;letter-spacing:-.015em;margin:4px 2px 16px}
+main h1.gate-h{letter-spacing:-.015em}
+.back{margin-bottom:6px;color:var(--muted);font-weight:400}
+.back:hover{color:var(--accent)}
+
+/* 카드: 무테두리 + 큰 라운드 (내용 위상 = 카드 단위) */
+.chk,.case,.toolbar,.z3-group,.adv-hit,.item-hit,.chk-head{border:0;box-shadow:var(--shadow)}
+.chk{border-radius:var(--r-card);padding:18px 22px;margin-bottom:12px}
+.case{border-radius:20px;padding:14px 20px}
+.case:hover,.case-row:hover{box-shadow:0 0 0 2px var(--accent-line)}
+.gate-card,.mod-card,.cta{border-color:transparent}
+.gate-card:hover,.mod-card:hover,.cta:hover{border-color:var(--accent)}
+.adv-panel{border:0;box-shadow:var(--shadow)}
+.easy-box{border:0}
+.mod-primary{border:2px solid transparent}
+.mod-primary:hover{border-color:var(--accent)}
+
+/* 섹션 캡션: 카드 그룹 위 작은 회색 라벨(One UI 그룹 헤더) */
+.home-sub{font-size:14px;font-weight:700;color:var(--muted);margin:26px 6px 10px;letter-spacing:0}
+.kb-l1{border-bottom:0;color:var(--muted);font-size:13px;font-weight:700;margin:18px 6px 6px;padding:0}
+.layer3-cap{border-top:0;margin-top:18px}
+
+/* 좌측 네비(점검표·계정 트리): 필 하이라이트 + 파란 값 표기 */
+.kb-nav{gap:2px;padding:6px;background:var(--card);border-radius:var(--r-card);box-shadow:var(--shadow)}
+.kb-item{border:0;background:transparent;border-radius:16px;padding:11px 14px}
+.kb-item:hover{background:var(--soft)}
+.kb-item.on{background:var(--soft);border:0}
+.kb-item.on b{color:var(--ink)}
+.kb-b{background:transparent;color:var(--accent);font-weight:700;padding:1px 2px}
+.kb-b-r{background:transparent;color:var(--accent)}
+.kb-b-e{background:transparent;color:var(--bad)}
+@media (max-width:720px){.kb-nav{flex-direction:row;flex-wrap:wrap;padding:8px}}
+
+/* 버튼: 풀라운드 필 (주=파랑 채움 / 보조=회색 톤·One UI 「맞춤 설정 더보기」) */
+.btn{border-radius:999px;padding:10px 22px}
+.btn.line{background:var(--card);color:var(--accent);border:0;box-shadow:inset 0 0 0 1.5px var(--accent-line)}
+.btn.line:hover{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.chip{border:0;background:var(--soft);border-radius:999px;padding:5px 12px}
+.chip:hover{color:var(--accent)}
+.aux{border:0;background:var(--soft);border-radius:999px;padding:8px 14px;font-size:var(--text-sm)}
+.quick{border:0;background:var(--soft)}
+.con-chip{border:0;background:var(--soft)}
+
+/* 세그먼트(진입/심화·계정 범위): 회색 트랙 + 흰 알약 */
+.lvl{border:0;background:var(--soft);padding:3px;gap:2px}
+.lvl button{background:transparent;border-radius:999px;padding:5px 14px}
+.lvl button.on{background:var(--accent);color:#fff}
+
+/* 입력: 채움형(테두리 없음) + 포커스 링 */
+.fld input,.fld select,.doc-in,.note-in,.case-bar input[type=search],.case-bar select,
+.adv-panel input,.desk-pair input,.desk-diffrow input,.num-calc input,.draft,
+table.xt input,table.xt select{border:0;background:var(--soft);border-radius:var(--r-btn)}
+.fld input:focus,.fld select:focus,.doc-in:focus,.note-in:focus,.case-bar input[type=search]:focus,
+.adv-panel input:focus,.desk-pair input:focus,.desk-diffrow input:focus,.num-calc input:focus,.draft:focus{outline:2px solid var(--accent);outline-offset:0}
+.case-bar input[type=search],.adv-panel input{padding:11px 16px;border-radius:999px}
+[data-theme="dark"] .fld input,[data-theme="dark"] .fld select,[data-theme="dark"] .doc-in,[data-theme="dark"] .note-in,
+[data-theme="dark"] .case-bar input[type=search],[data-theme="dark"] .case-bar select,[data-theme="dark"] .adv-panel input,
+[data-theme="dark"] .desk-pair input,[data-theme="dark"] .desk-diffrow input,[data-theme="dark"] .num-calc input,[data-theme="dark"] .draft{background:var(--soft)}
+
+/* 안내 카드: 좌측 스트라이프 제거 → 틴트 라운드 카드(One UI 제안 카드) */
+.note,.notice{border-left:0;border-radius:18px;padding:13px 18px}
+.chk .quote{border-left:0;border-radius:14px;background:var(--soft)}
+.quote{border-radius:14px}
+.num-real{border-left:0;border-radius:14px}
+.kb-test{border-left:3px solid var(--accent);border-radius:0 14px 14px 0}
+.kb-recipe{border-left:0;box-shadow:var(--shadow),inset 3px 0 0 var(--accent)}
+.desk-r.bad{border-left:0;box-shadow:var(--shadow),inset 3px 0 0 var(--bad)}
+
+/* 4단계 프로세스 맵: 분절 바 → 개별 라운드 카드 */
+.steps{gap:10px}
+.steps div{border:0;background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:12px 12px}
+.steps div:first-child,.steps div:last-child{border-radius:18px}
+.steps b{margin-bottom:2px}
+.step-link:hover{box-shadow:0 0 0 2px var(--accent-line);color:var(--accent)}
+
+/* 표: 셀 테두리 → 행 구분선만(가로선) */
+table.xt,table.cmp{border-radius:14px;overflow:hidden}
+table.xt th,table.xt td,table.cmp th,table.cmp td{border:0;border-bottom:1px solid var(--line)}
+table.xt tr:last-child td,table.cmp tr:last-child td{border-bottom:0}
+table.xt th{background:var(--soft)}
+
+/* 접기(폴드) 행: 카드 안 요약행 */
+.gate-cmp summary{padding:4px 2px}
+.quote-fold summary{color:var(--accent)}
+
+/* 배지: 풀라운드 소형 */
+.b{border-radius:999px;padding:2px 9px;border:0}
+@supports (color: color-mix(in srgb, red, blue)){.b{border:0}}
+.flag{border-radius:999px}
+
+/* 게이트·홈 대형 카드 */
+.gate-card{border-radius:var(--r-card);border-width:2px}
+.adv-panel,.axis2{border-radius:var(--r-card)}
+.toolbar{border-radius:var(--r-card);padding:12px 16px}
+.notice.slim{border-radius:18px}
+.chk-head{border-radius:999px;padding:9px 18px}
+
+/* 상세 슬라이드오버: 왼쪽 큰 라운드 */
+.co-panel{border-left:0;border-radius:24px 0 0 24px;box-shadow:-8px 0 28px rgba(0,0,0,.22)}
+.co-x{border:0;background:var(--soft)}
+
+/* 다크: 배경 위 카드 대비 확보 */
+[data-theme="dark"] .theme-btn,[data-theme="dark"] .org-chip{background:var(--card)}
+[data-theme="dark"] .co-t b{background:var(--accent-soft)}
