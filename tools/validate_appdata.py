@@ -8,7 +8,7 @@ from pathlib import Path
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 ORGS = {"지자체", "지방공기업", "출자·출연기관"}
-MODULES = {"세입", "세출", "보조금·출연금", "재산·물품", "손해·변상", "결산·재무제표", "재무건전성"}
+MODULES = {"내부통제", "세입", "세출", "보조금·출연금", "재산·물품", "손해·변상", "결산·재무제표", "재무건전성"}
 STATES = {"pdf", "pdf_conv", "hwp", "zip", "csd", "none"}
 import re
 ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")  # 라디오 name·셀렉터에 안전한 문자만
@@ -56,12 +56,18 @@ def main():
     for x in co:
         check(bool(x.get("용어")) and bool(x.get("초심자설명")), f"concept {x.get('id')}: 필드 누락")
 
+    mc = json.loads((DATA / "kb" / "misclass_pairs.json").read_text(encoding="utf-8"))
+    mcp = mc.get("쌍") or []
+    check(len(mcp) >= 15, f"misclass_pairs 수 이상: {len(mcp)}")
+    for m in mcp:
+        check(bool(m.get("적정")) and bool(m.get("오류")) and bool(m.get("확인")), f"misclass {m.get('id')}: 필드 누락")
+
     if errors:
         print(f"✗ 위반 {len(errors)}건")
         for e in errors[:20]:
             print(" -", e)
         sys.exit(1)
-    print(f"✓ 통과 — checkitems {len(ci)} · tie {len(tr)} · risk {len(rr)} · cases {len(cs)} · concepts {len(co)}")
+    print(f"✓ 통과 — checkitems {len(ci)} · tie {len(tr)} · risk {len(rr)} · cases {len(cs)} · concepts {len(co)} · misclass {len(mcp)}")
 
 if __name__ == "__main__":
     main()

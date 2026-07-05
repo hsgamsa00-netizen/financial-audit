@@ -35,7 +35,7 @@
   function excSave(list) { localStorage.setItem('fa_exc:' + orgOf(), JSON.stringify(list)); }
   function excAdd(e) {
     const list = excAll();
-    list.push({ ...e, 상태: '미해결', 메모: '', ts: new Date().toISOString().slice(0, 16).replace('T', ' ') });
+    list.push({ ...e, 상태: '미해결', 메모: '', 연도: String(new Date().getFullYear()), ts: new Date().toISOString().slice(0, 16).replace('T', ' ') });
     excSave(list);
   }
 
@@ -164,6 +164,20 @@
     if (!dataStore['risk_rules.json']) w.innerHTML = '<div class="chk">불러오는 중…</div>';
     const refs = await load('risk_rules.json');
     if (!refs) { w.innerHTML = LOAD_FAIL; $('#riskRef').innerHTML = ''; return; }
+    // 내부통제 예비평가(점검표 「내부통제」) 응답 → 통제위험(CR) 기본값 제안
+    const icItems = (window.FA.items() || []).filter(it => it.모듈 === '내부통제' && (it.기관유형 || []).includes(orgOf()));
+    const icResp = window.FA.respAll();
+    const icAns = icItems.filter(it => icResp[it.id] && icResp[it.id].a && icResp[it.id].a !== '해당없음');
+    const icNo = icAns.filter(it => icResp[it.id].a === '아니오').length;
+    let crDef = '0.7', icNote;
+    if (icAns.length >= 5) {
+      const ratio = icNo / icAns.length;
+      crDef = ratio >= 0.3 ? '1' : ratio >= 0.1 ? '0.7' : '0.4';
+      icNote = `내부통제 예비평가 응답 ${icAns.length}건 중 미비(아니오) ${icNo}건 → 통제위험 기본값 「${crDef === '1' ? '높음' : crDef === '0.7' ? '중간' : '낮음'}」 제안(직접 조정 가능)`;
+    } else {
+      icNote = '내부통제 예비평가 응답이 아직 부족합니다 — 점검표 「내부통제」를 먼저 수행하면 통제위험(CR) 기본값을 제안합니다.';
+    }
+    const crSel = (v) => crDef === v ? ' selected' : '';
     w.innerHTML = `<div class="chk"><div class="q">재정위험 판단 지표 (주의/심각)</div><div class="meta"><span class="b b-ev">기준 직접근거</span><span class="b b-lvl">지자체 결산 통합기준</span></div><div class="risk-grid">${
       RISK6.map((r, i) => `<div class="fld"><label>${esc(r.nm)}</label><input data-risk="${i}" inputmode="decimal" aria-label="${esc(r.nm)}"><span class="risk-v" data-rv="${i}"></span><span class="risk-th">주의 ${r.warn}% ${r.dir === 'over' ? '초과' : '미만'} · 심각 ${r.grave}% ${r.dir === 'over' ? '초과' : '미만'}</span></div>`).join('')
     }</div></div>
@@ -175,10 +189,13 @@
         <div class="fld"><label>고유위험(IR) — 계정 성격상 왜곡 가능성</label>
           <select data-ar="ir" aria-label="고유위험"><option value="0.4">낮음 (단순·현금주의성 계정)</option><option value="0.7" selected>중간</option><option value="1">높음 (평가·추정 계정: 충당부채·감가상각·건설가계정)</option></select></div>
         <div class="fld"><label>통제위험(CR) — 내부통제가 못 거를 가능성</label>
-          <select data-ar="cr" aria-label="통제위험"><option value="0.4">낮음 (분리·대사·전산통제 양호)</option><option value="0.7" selected>중간</option><option value="1">높음 (회계직 미분리·비밀번호 공유·장기보직)</option></select></div>
+          <select data-ar="cr" aria-label="통제위험"><option value="0.4"${crSel('0.4')}>낮음 (분리·대사·전산통제 양호)</option><option value="0.7"${crSel('0.7')}>중간</option><option value="1"${crSel('1')}>높음 (회계직 미분리·비밀번호 공유·장기보직)</option></select></div>
       </div>
+      <div class="m">🛡️ ${esc(icNote)} <button class="chip" data-go-ic type="button">내부통제 예비평가 열기</button></div>
       <div class="rule" data-ar-out></div>
     </div>`;
+    const gic = w.querySelector('[data-go-ic]');
+    if (gic) gic.addEventListener('click', () => { if (window.FA.openCheck) window.FA.openCheck('내부통제'); });
     const arOut = w.querySelector('[data-ar-out]');
     const arCalc = () => {
       const ir = parseFloat(w.querySelector('[data-ar="ir"]').value);
@@ -344,6 +361,15 @@
   function renderTree() {
     const box = $('#treeBox');
     box.innerHTML = `
+      <div class="chk"><div class="q">Q0. 이 발견은 어느 갈래입니까? — 성격에 따라 출구가 다릅니다</div>
+        <div class="ans-row">
+          <label class="rad"><input type="radio" name="t0" value="fs">① 재무제표 신뢰성(수치·표시 오류)</label>
+          <label class="rad"><input type="radio" name="t0" value="ic">② 내부통제 취약성</label>
+          <label class="rad"><input type="radio" name="t0" value="il">③ 위법·부당(처분 검토)</label>
+          <label class="rad"><input type="radio" name="t0" value="mg">④ 관리상 개선</label>
+        </div>
+        <div class="rule" data-t0 hidden></div></div>
+      <div data-ilwrap hidden>
       <div class="chk"><div class="q">Q1. 금전적 원상회복이 가능한 사안인가?</div>
         <div class="ans-row"><label class="rad"><input type="radio" name="t1" value="y">예</label><label class="rad"><input type="radio" name="t1" value="n">아니오</label></div>
         <div class="rule" data-t1 hidden></div></div>
@@ -355,7 +381,19 @@
         <div class="rule" data-t3v></div>
         <div class="note">ℹ️ <b>「손해로 보지 않는 경우」 먼저 확인</b> — 기관 부담 경비로 사용·상응 대가 취득·기관 간 내부거래 고가·임차물품 망실 등은 손해로 보지 않습니다.</div></div>
       <div class="note danger">🚔 <b>형사연계 임계선</b> — 개인계좌 집행·이중청구·무단반출 신호는 자체감사 범위를 초과합니다. 고발·수사의뢰를 검토하십시오.</div>
+      </div>
       <div class="note info">본 트리의 결과는 검토 방향 안내이며 처분 확정이 아닙니다. 유사 선례의 처분 분포는 사례 참조에서 확인하십시오.</div>`;
+    const t0 = box.querySelector('[data-t0]'); const ilwrap = box.querySelector('[data-ilwrap]');
+    box.querySelectorAll('input[name="t0"]').forEach(x => x.addEventListener('change', () => {
+      t0.hidden = false;
+      ilwrap.hidden = x.value !== 'il';
+      t0.textContent = ({
+        fs: '→ 재무제표 신뢰성 갈래 — 수정분개·재작성 요구를 검토하고, 오류 원인이 단순 실수인지 통제 미비인지 확인하십시오(통제 미비면 ② 갈래 병행). 이 도구는 감사의견을 자동 생성하지 않습니다.',
+        ic: '→ 내부통제 취약성 갈래 — 「중대한 취약성」(재무제표 신뢰성에 직접 영향·반복 발생 구조)인지 「기타 개선 필요」인지 구분해 개선요구·권고·통보로 구성하십시오.',
+        il: '→ 위법·부당 갈래 — 아래 Q1부터 처분수위 검토를 진행하십시오.',
+        mg: '→ 관리상 개선 갈래 — 처분요구가 아닌 관리서한(개선 권고)으로 구성하십시오. 조서 초안 생성 시 관리서한 골격이 포함됩니다.',
+      })[x.value] || '';
+    }));
     const t1 = box.querySelector('[data-t1]'); const q2 = box.querySelector('[data-q2]');
     const t2 = box.querySelector('[data-t2]'); const q3 = box.querySelector('[data-q3]');
     box.querySelectorAll('input[name="t1"]').forEach(x => x.addEventListener('change', () => {
@@ -440,13 +478,15 @@
     const answered = items.filter(it => resp[it.id] && resp[it.id].a);
     const nos = items.filter(it => resp[it.id] && resp[it.id].a === '아니오');
     const exc = excAll();
+    const carriedN = exc.filter(e => e.상태 === '차기이월').length;
     $('#repSummary').innerHTML = `<div class="chk"><div class="q">${esc(orgOf())} — 진행 요약</div>
-      <div class="rule">응답 ${answered.length}/${items.length}건 · 지적 후보(아니오) ${nos.length}건 · 검산 예외 ${exc.length}건</div></div>`;
+      <div class="rule">응답 ${answered.length}/${items.length}건 · 지적 후보(아니오) ${nos.length}건 · 검산 예외 ${exc.length}건${carriedN ? ` · 차기이월 관찰 ${carriedN}건` : ''}</div>
+      ${carriedN ? '<div class="m">「차기이월」 = 허용오류 이하이거나 당기 종결이 어려운 관찰 — 조서 초안의 「차기 감사 고려사항」에 모이고, 내보내기(.json)로 차기 감사자에게 전달할 수 있습니다.</div>' : ''}</div>`;
     const et = $('#excTable');
     et.innerHTML = exc.length ? `<table class="xt"><tr><th>출처</th><th>항목</th><th>내용</th><th>상태</th><th>메모</th><th></th></tr>${
-      exc.map((e, i) => `<tr><td>${esc(e.src)}</td><td>${esc(e.이름)}</td><td>${esc(e.내용)}</td>
-        <td><select data-xs="${i}">${['미해결', '설명가능', '지적후보'].map(s => `<option ${e.상태 === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
-        <td><input data-xm="${i}" value="${esc(e.메모 || '')}" placeholder="원인·조치 메모"></td>
+      exc.map((e, i) => `<tr><td>${esc(e.src)}</td><td>${esc(e.이름)}${e.연도 ? ` <span class="b b-lvl">${esc(e.연도)}</span>` : ''}</td><td>${esc(e.내용)}</td>
+        <td><select data-xs="${i}">${['미해결', '설명가능', '지적후보', '차기이월'].map(s => `<option ${e.상태 === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
+        <td><input data-xm="${i}" value="${esc(e.메모 || '')}" placeholder="원인·조치 메모 (차기이월이면 차기 확인 포인트)"></td>
         <td><button class="chip" data-xd="${i}">삭제</button></td></tr>`).join('')
     }</table>` : '<div class="chk">등록된 예외가 없습니다. 검산기에서 불일치 발생 시 「예외로 등록」을 누르십시오.</div>';
     et.querySelectorAll('[data-xs]').forEach(s => s.addEventListener('change', () => { const l = excAll(); l[+s.dataset.xs].상태 = s.value; excSave(l); }));
@@ -478,8 +518,9 @@
     const resp = window.FA.respAll();
     const nos = items.filter(it => resp[it.id] && resp[it.id].a === '아니오');
     const exc = excAll();
-    const open = exc.filter(e => e.상태 !== '설명가능');
+    const open = exc.filter(e => e.상태 !== '설명가능' && e.상태 !== '차기이월');
     const closed = exc.filter(e => e.상태 === '설명가능');
+    const carried = exc.filter(e => e.상태 === '차기이월');
     const d = new Date().toISOString().slice(0, 10);
     let md = `# 감사조서 초안 — ${orgOf()} 재무감사 점검\n\n작성일: ${d} · 도구: 재무감사 도우미(결정론 점검·초안 보조)\n\n`;
     const answeredN = items.filter(it => resp[it.id] && resp[it.id].a).length;
@@ -501,11 +542,16 @@
       closed.forEach(e => { md += `- ${e.이름}: ${e.내용} → 해명: ${e.메모 || '(메모 없음)'}\n`; });
       md += '\n';
     }
+    if (carried.length) {
+      md += `## 2-C. 차기 감사 고려사항(이월 관찰) — ${carried.length}건\n허용오류 이하이거나 당기 종결이 어려운 관찰사항. 차기 결산검사 계획 수립 시 우선 확인(미지적 오류의 지속 관리 — 감사연구원 2013 권고 준용).\n`;
+      carried.forEach(e => { md += `- [${e.연도 || String(e.ts || '').slice(0, 4)}] ${e.이름}: ${e.내용} → 차기 확인 포인트: ${e.메모 || '(기재 필요)'}\n`; });
+      md += '\n';
+    }
     if (nos.length) {
       md += `## 3. 체크리스트 지적 후보\n`;
       nos.forEach((it, i) => {
         const r = resp[it.id];
-        md += `\n### 3-${i + 1}. ${it.착안질문}\n- 영역: ${it.영역 || ''} · 항목 ${it.id} · 근거 라벨: 기준 직접근거${it.서식번호 ? ` · 서식 ${it.서식번호}` : ''}\n`;
+        md += `\n### 3-${i + 1}. ${it.착안질문}\n- 영역: ${it.영역 || ''} · 항목 ${it.id} · 근거 라벨: ${it.근거라벨 || '기준 직접근거'}${it.서식번호 ? ` · 서식 ${it.서식번호}` : ''}\n`;
         if (it.판정규칙) md += `- 판정규칙: ${it.판정규칙}\n`;
         if (it.red_flag) md += `- red flag: ${it.red_flag}\n`;
         md += `- 근거조문(원문): ${String(it.근거조문 || '').replace(/\s+/g, ' ')}\n- 확인 서류: ${r.doc || '(기재 필요)'}\n- 사실관계: ${r.note || '(기재 필요)'}\n- 원인·개선방향·조치: (기재 필요 — 사실+원인+개선+처분 구조로)\n`;
@@ -519,7 +565,7 @@
       doneAll.forEach(it => { md += `| ${it.id} ${it.착안질문.slice(0, 40)} | ${resp[it.id].a} | ${resp[it.id].doc || ''} |\n`; });
       md += '\n';
     }
-    md += `## 처분요구서 골격(실무 보고서 5단 구조 — 빈칸 프레임)\n지적 후보를 처분요구서로 발전시킬 때 아래 구조 사용(타 기관 재무감사 결과보고서 추출 표준):\n1. 업무 개요: (기재)\n2. 관련 내규·판단기준: (조문 원문 인용)\n3. 문제점(사실관계·차이·영향): (수치는 원문 대조 후)\n4. 관계부서 의견: (기재)\n5. 조치할 사항: (조치권한자를 주어로·명사형 종결)\n\n`;
+    md += `## 발견사항 4갈래 분류 안내\n각 발견사항을 아래 4갈래 중 어디에 둘지 먼저 정하십시오(처분수위 판단트리 Q0 참조):\n① 재무제표 신뢰성 → 수정분개·재작성 요구 검토\n② 내부통제 취약성 → 「중대한 취약성 / 기타 개선 필요」 구분 후 개선요구·권고\n③ 위법·부당 → 처분요구서 골격 사용\n④ 관리상 개선 → 관리서한 골격 사용\n\n## 처분요구서 골격(실무 보고서 5단 구조 — 빈칸 프레임)\n지적 후보를 처분요구서로 발전시킬 때 아래 구조 사용(타 기관 재무감사 결과보고서 추출 표준):\n1. 업무 개요: (기재)\n2. 관련 내규·판단기준: (조문 원문 인용)\n3. 문제점(사실관계·차이·영향): (수치는 원문 대조 후)\n4. 관계부서 의견: (기재)\n5. 조치할 사항: (조치권한자를 주어로·명사형 종결)\n\n## 관리서한(개선 권고) 골격 — 처분요구에 이르지 않는 관리상 개선사항\n1. 현황: (기재)\n2. 개선이 필요한 사유(위험): (기재)\n3. 권고 사항: (기재 — 조치계획 회신 요청)\n\n`;
     md += `## 유의사항\n- 본 초안은 합리적 확신 수준의 점검 보조 자료이며 처분·지적 확정이 아님.\n- 인용 수치·조문은 원문과 대조 후 사용할 것.\n`;
     outputTo('감사조서초안', md);
   }
@@ -548,16 +594,16 @@
   let kbSel = null;   // 선택 노드 id
   let kbAll = localStorage.getItem('fa_kb_all') === '1';   // C안: 전체 계정 모드 토글
   async function loadKb() {
-    const [tree, rec, cards, eps, laws, defs, adv, pf, nx, af, ez] = await Promise.all([
+    const [tree, rec, cards, eps, laws, defs, adv, pf, nx, af, ez, mc] = await Promise.all([
       load('kb/accounts_tree.json'), load('kb/recipes.json'), load('kb/recipe_cards.json'),
       load('kb/error_patterns.json'), load('kb/law_cards.json'), load('kb/account_defs.json'),
       load('kb/advisor_map.json'), load('kb/practice_findings.json'), load('kb/numeric_examples.json'),
-      load('kb/accounts_full.json'), load('kb/easy_accounts.json')]);
+      load('kb/accounts_full.json'), load('kb/easy_accounts.json'), load('kb/misclass_pairs.json')]);
     // 래퍼 관용: 배열이면 그대로, 딕셔너리면 첫 배열 값(한국어 키 '노드'·'매핑' 등 포함)
     const arr = (x) => Array.isArray(x) ? x
       : (x && typeof x === 'object' ? (Object.values(x).find(v => Array.isArray(v) && v.length && typeof v[0] === 'object') || []) : []);
     return { tree: arr(tree), rec: arr(rec), cards: arr(cards),
-      eps: arr(eps), laws: arr(laws), defs: arr(defs), adv: arr(adv), pf: arr(pf), nx: arr(nx), full: arr(af), ez: arr(ez) };
+      eps: arr(eps), laws: arr(laws), defs: arr(defs), adv: arr(adv), pf: arr(pf), nx: arr(nx), full: arr(af), ez: arr(ez), mc: arr(mc) };
   }
   function mergedNodes(kb) {   // C안 병합: 지적례 노드(rich) + 전체 계정(basic·중복 제외)
     if (!kbAll || !kb.full.length) return kb.tree;
@@ -597,6 +643,15 @@
     function add() { let v = mul(); while (peek() === '+' || peek() === '-') { const op = next(); const r = mul(); v = op === '+' ? v + r : v - r; } return v; }
     const out = add();
     return (pos === tokens.length && isFinite(out)) ? out : null;
+  }
+  function misclassBlock(node, kb) {   // 🔀 자주 헷갈리는 계정 쌍(감사연구원 2013 표24 실증)
+    const toks = String(node.명칭 || '').split('·').map(x => x.trim()).filter(x => x.length >= 2);
+    const hits = (kb.mc || []).filter(m => toks.some(t => (m.적정 + m.오류).includes(t)));
+    if (!hits.length) return '';
+    return `<details class="quote-fold"><summary>🔀 자주 헷갈리는 계정 쌍 (${hits.length}) — 선례 실증</summary>${
+      hits.map(m => `<div class="chk"><div class="q">${esc(m.오류)} ➜ <b>${esc(m.적정)}</b> <span class="b b-lvl">${esc(m.방향)}</span></div>
+        <div class="co-t">증상: ${esc(m.증상)}</div><div class="rule">확인: ${esc(m.확인)}</div><div class="m">출처: ${esc(m.출처)}</div></div>`).join('')
+    }<div class="m">경향(감사연구원 2013 실증): 자산을 비용으로 잘못 분류하는 방향이 그 반대보다 많습니다.</div></details>`;
   }
   function easyBlock(nodeId, kb, ids) {   // 🧑‍💼 AI 회계사의 쉬운 설명(재해석·AI 라벨 구분)
     const e = (kb.ez || []).find(x => ids.includes(x.id));
@@ -734,6 +789,7 @@
         <div class="chk"><div class="q">📖 ${esc(node.명칭)} — 표준계정과목 해설서 <span class="b b-lvl">${esc((a.출처 || '').replace(/\[\[|\]\]/g, ''))}</span></div>
         <div class="quote">${esc(fmtBreaks(a.정의_원문 || ''))}</div>
         ${a.유의사항_원문 ? `<h4 class="co-h">회계처리 유의사항</h4><div class="quote">${esc(fmtBreaks(a.유의사항_원문))}</div>` : ''}</div>
+        ${misclassBlock(node, kb)}
         <div class="view-p">이 계정은 심화 검증 콘텐츠(레시피)가 아직 없습니다 — 도구가 잡아주지 못하는 영역(적발위험)이 상대적으로 크므로, 관련 사례·같은 분류의 지적례 계정을 참고하고 원장 열람·외부확인으로 보완하십시오.</div>
         <div class="btnbar"><button class="btn line" data-go-kws="${esc((node.case_kw || [node.명칭]).join('|'))}">📚 관련 사례 검색</button></div>
         ${sibs.length ? `<h3 class="home-sub">같은 분류의 지적례 계정</h3>` + sibs.map(s => `<button class="kb-case" data-sib="${esc(s.id)}">▸ ${esc(s.명칭)} <span class="b b-lvl">레시피 ${(s.recipe_ids || []).length}</span></button>`).join('') : ''}`;
@@ -761,6 +817,8 @@
     recs.forEach(r => { h += verifyCard(r, kb); });
     // 검산 연결
     if ((node.tie_ids || []).length) h += `<div class="note info">🧮 이 계정은 <b>정합성 검산</b>이 가능합니다 — <button class="chip" data-go-tie>검산기에서 수치 입력</button></div>`;
+    // 자주 헷갈리는 계정 쌍(오분류 사전)
+    h += misclassBlock(node, kb);
     // 노드 전용 오류패턴(레시피 밖)
     const inRec = new Set(recs.flatMap(r => (r['2_오류패턴'] || []).map(p => p.ep_id)));
     const eps = (node.ep_ids || []).map(id => kb.eps.find(p => p.id === id)).filter(p => p && !inRec.has(p.id));
@@ -851,7 +909,14 @@
         ${k0 ? `<input type="number" step="any" data-dk="${k0}" placeholder="전기" value="${saved[k0] ?? ''}">` : ''}</span></label>`).join('')}
     </div></div>`).join('')
     + `<div class="chk"><div class="q">D. 차이명세서 대사(선택) — 본표 금액과 「재무제표와 예산결산서 차이명세서」의 재무제표란이 같은지</div>
-      <div id="deskDiff"></div><button class="btn line" id="deskDiffAdd" type="button">+ 계정 추가</button></div>`;
+      <div id="deskDiff"></div><button class="btn line" id="deskDiffAdd" type="button">+ 계정 추가</button></div>`
+    + `<details class="gate-cmp"${(saved.mb || saved.mp) ? ' open' : ''}><summary>E. 중요성(허용오류 규모) 설정 — 선택</summary>
+      <div class="chk"><div class="risk-grid">
+        <div class="fld"><label>기준금액(원) — 예: 총자산·총비용</label><input type="number" step="any" data-dk="mb" value="${saved.mb ?? ''}"></div>
+        <div class="fld"><label>비율(%) — 직접 입력</label><input type="number" step="any" data-dk="mp" value="${saved.mp ?? ''}"></div>
+      </div>
+      <div class="rule" id="matOut"></div>
+      <div class="m">공공부문 중요성 비율은 확정 규범이 없어 직접 입력합니다(민간 실무 관행 예시: 총자산의 0.5–2% 등). 산출값은 검사범위 판단 참고치이며 <b>지적·처분의 면책 기준이 아닙니다</b>. 금액이 작아도 질적으로 중요한 사안(이용자 오도·공익 민감·반복 오류)은 별도 검토하십시오.</div></div></details>`;
     const dd = $('#deskDiff');
     const addRow = (nm, v1, v2) => {
       const row = document.createElement('div'); row.className = 'desk-diffrow';
@@ -863,6 +928,15 @@
     (saved._diff || [[], []]).length ? (saved._diff || []).forEach(r => addRow(r[0], r[1], r[2])) : null;
     if (!dd.children.length) { addRow(); addRow(); }
     $('#deskDiffAdd').onclick = () => addRow();
+    const matCalc = () => {
+      const mb = parseFloat(($('#deskForm [data-dk="mb"]') || {}).value), mp = parseFloat(($('#deskForm [data-dk="mp"]') || {}).value);
+      const out = $('#matOut');
+      if (out) out.textContent = (isFinite(mb) && isFinite(mp) && mb > 0 && mp > 0)
+        ? `중요성(허용오류) 금액 ≈ ${fmt(mb * mp / 100)}원 — 이 금액 이상의 전기 대비 변동은 비율과 무관하게 신호로 표시됩니다`
+        : '';
+    };
+    ['mb', 'mp'].forEach(k => { const el = $(`#deskForm [data-dk="${k}"]`); if (el) el.addEventListener('input', matCalc); });
+    matCalc();
     $('#deskRun').onclick = runDesk;
     $('#deskClear').onclick = () => { localStorage.removeItem('fa_desk:' + orgOf()); renderDesk(); $('#deskOut').innerHTML = ''; };
     $('#deskOut').innerHTML = '';
@@ -889,12 +963,15 @@
     tie('③ 현금흐름 (기초+증감 = 기말)', v.cf1, (v.cf0 ?? 0) + (v.cfd ?? 0), [v.cf0, v.cfd, v.cf1]);
     tie('④ 현금흐름표 기말 = 재무상태표 현금 (당기)', v.cf1, v.ch1, [v.cf1, v.ch1]);
     diff.forEach(([nm, x, y]) => tie(`⑤ 차이명세서 대사 — ${nm}`, x, y, [x, y]));
-    // 분석적 검토(전기 대비 10%+)
+    // 분석적 검토(전기 대비 10% 또는 중요성 금액 이상)
+    const mat = (isFinite(v.mb) && isFinite(v.mp) && v.mb > 0 && v.mp > 0) ? v.mb * v.mp / 100 : null;
     const sig = [];
     const chg = (lb, cur, prev) => {
       if (F(cur) === null || F(prev) === null || prev === 0) return;
-      const p = (cur - prev) / Math.abs(prev) * 100;
-      if (Math.abs(p) >= 10) sig.push(`${lb}: ${fmt(prev)} → ${fmt(cur)} (${p > 0 ? '+' : ''}${p.toFixed(1)}%) — 원인을 구체적 거래로 확인`);
+      const d = cur - prev;
+      const p = d / Math.abs(prev) * 100;
+      const hitPct = Math.abs(p) >= 10, hitMat = mat !== null && Math.abs(d) >= mat;
+      if (hitPct || hitMat) sig.push(`${lb}: ${fmt(prev)} → ${fmt(cur)} (${p > 0 ? '+' : ''}${p.toFixed(1)}%${hitMat && !hitPct ? ' · 10% 미만이지만 중요성 금액 이상' : ''}) — 원인을 구체적 거래로 확인`);
     };
     chg('자산총계', v.a1, v.a0); chg('부채총계', v.b1, v.b0); chg('자본총계', v.c1, v.c0);
     chg('매출액', v.s1, v.s0); chg('영업이익', v.op1, v.op0); chg('당기순이익', v.ni1, v.ni0); chg('현금', v.ch1, v.ch0);
@@ -912,7 +989,7 @@
     const skipped = rows.filter(r => r.skip).length;
     if (skipped) h += `<div class="m">· 입력 미완으로 건너뜀 ${skipped}건</div>`;
     const hasPrev = [v.a0, v.b0, v.c0, v.s0, v.op0, v.ni0, v.ch0].some(x => F(x) !== null);
-    if (sig.length) h += `<h3 class="home-sub">분석적 검토 신호 (전기 대비 10%+ 등)</h3>` + sig.map(s => `<div class="chk"><div class="co-t">📈 ${esc(s)}</div></div>`).join('');
+    if (sig.length) h += `<h3 class="home-sub">분석적 검토 신호 (전기 대비 10%${mat !== null ? ' 또는 중요성 금액' : ''} 이상)</h3>` + sig.map(s => `<div class="chk"><div class="co-t">📈 ${esc(s)}</div></div>`).join('');
     else if (hasPrev) h += `<h3 class="home-sub">분석적 검토 신호</h3><div class="chk"><div class="co-t">전기 대비 10% 이상 변동 없음</div></div>`;
     if (hasPrev) h += `<div class="m">※ ±10%는 관행적 초기 스크린입니다 — 신호가 없어도 문제가 없다는 뜻이 아니며, 금액이 작아도 질적으로 중요한 사안(채용·수당·반복 오류 등)은 별도 검토가 필요합니다(개념 온보딩 「중요성」 참조).</div>`;
     if (ratio.length) h += `<h3 class="home-sub">비율</h3><div class="chk"><div class="co-t">${ratio.map(esc).join(' · ')}</div></div>`;
@@ -1002,6 +1079,37 @@
     a.href = URL.createObjectURL(blob);
     a.download = `${lastGen.kind || '산출물'}_${orgOf()}_${new Date().toISOString().slice(0, 10)}.md`;
     a.click(); URL.revokeObjectURL(a.href);
+  });
+  // 예외·관찰 내보내기/가져오기 — 차기 감사(다른 PC·담당자) 이월용
+  $('#btnExcExp').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ org: orgOf(), exported: new Date().toISOString().slice(0, 10), items: excAll() }, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `예외관찰_${orgOf()}_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click(); URL.revokeObjectURL(a.href);
+  });
+  $('#btnExcImpBtn').addEventListener('click', () => $('#btnExcImp').click());
+  $('#btnExcImp').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const d = JSON.parse(rd.result);
+        const inc = Array.isArray(d) ? d : (d.items || []);
+        if (!Array.isArray(inc) || !inc.length) { alert('가져올 예외 항목이 없습니다.'); return; }
+        if (d.org && d.org !== orgOf() && !confirm(`파일의 기관유형(${d.org})이 현재(${orgOf()})와 다릅니다. 그래도 가져올까요?`)) return;
+        const cur = excAll();
+        const key = (x) => [x.이름, x.내용, x.ts].join('|');
+        const seen = new Set(cur.map(key));
+        let n = 0;
+        inc.forEach(x => { if (x && x.이름 && !seen.has(key(x))) { cur.push(x); seen.add(key(x)); n += 1; } });
+        excSave(cur); renderReport();
+        alert(`${n}건 가져왔습니다 (중복 ${inc.length - n}건 제외).`);
+      } catch { alert('JSON 해석 실패 — 「예외 내보내기」로 생성한 파일인지 확인하십시오.'); }
+      e.target.value = '';
+    };
+    rd.readAsText(f);
   });
   $('#btnWipe').addEventListener('click', () => {
     if (!confirm(`「${orgOf()}」의 저장 데이터(응답·검산 입력·예외)를 이 브라우저에서 전부 삭제할까요? 되돌릴 수 없습니다.`)) return;

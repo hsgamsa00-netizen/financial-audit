@@ -83,6 +83,14 @@
       </button>
     </div>
 
+    <!-- 재무감사 4단계 프로세스 맵 (계획 → 내부통제 평가 → 입증 → 보고) -->
+    <div class="steps procmap" aria-label="재무감사 4단계">
+      <div data-step="risk"><b>① 계획</b>위험·중요성 — 어디를 얼마나 볼지</div>
+      <div data-step="ic"><b>② 내부통제 평가</b>오류를 만드는 구조 점검</div>
+      <div data-step="kb"><b>③ 입증(검증)</b>계정 검증·판독대·검산</div>
+      <div data-step="report"><b>④ 보고</b>조서·4갈래 출구</div>
+    </div>
+
     <!-- 하단 도구바: 한 줄 가로 -->
     <div class="toolbar">
       <span class="tb-g">🧮 검증 실행</span>
@@ -226,6 +234,9 @@
     <div class="btnbar">
       <button class="btn" id="btnDraft">📋 감사조서 초안 생성</button>
       <button class="btn line" id="btnDocs">📑 자료요구 목록 생성</button>
+      <button class="btn line" id="btnExcExp">⬇ 예외 내보내기(.json)</button>
+      <button class="btn line" id="btnExcImpBtn">⬆ 예외 가져오기</button>
+      <input type="file" id="btnExcImp" accept="application/json,.json" hidden>
       <button class="btn line" id="btnWipe" style="margin-left:auto;color:var(--bad);border-color:var(--bad)">🗑 이 기관 데이터 전체 삭제</button>
     </div>
     <textarea id="draftOut" class="draft" hidden spellcheck="false" aria-label="생성된 초안"></textarea>

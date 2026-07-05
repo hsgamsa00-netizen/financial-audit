@@ -3,6 +3,7 @@
 'use strict';
 
 const MODULES = [
+  { key: '내부통제', icon: '🛡️', desc: '직무분리·결재·대사·시스템 — 예비평가' },
   { key: '세입', icon: '💰', desc: '부과·징수·감면·결손·제척기간' },
   { key: '세출', icon: '📤', desc: '목적외·회계연도·통계목·인건비·계약' },
   { key: '보조금·출연금', icon: '🤝', desc: '교부·정산·환수·계정분류' },
@@ -181,7 +182,7 @@ function renderCheck(mod) {
       <div class="meta">
         <span class="b b-area">${esc(it.영역 || '')}</span>
         <span class="b b-lvl">${esc(it.난이도 || '진입')}</span>
-        <span class="b b-ev">기준 직접근거</span>
+        <span class="b ${it.근거라벨 && it.근거라벨 !== '기준 직접근거' ? 'b-lvl' : 'b-ev'}">${esc(it.근거라벨 || '기준 직접근거')}</span>
         ${it.서식번호 ? `<span class="b b-lvl">서식 ${esc(it.서식번호)}</span>` : ''}
       </div>
       ${it.판정규칙 ? `<div class="rule">판정: ${esc(it.판정규칙)}</div>` : ''}
@@ -282,14 +283,18 @@ if (bc) bc.addEventListener('click', () => {
     : (MODULES.find(m => itemsFor(m.key).length) || MODULES[0]).key;
   renderCheck(first);
 });
-// 감사 4단계 바 → 해당 도구 연결
-const STEP_GO = ['risk', null, 'tie', 'report'];
-document.querySelectorAll('.steps div').forEach((el, i) => {
-  const t = STEP_GO[i];
-  if (!t) return;
+// 재무감사 4단계 프로세스 맵 → 해당 도구 연결(②는 내부통제 예비평가 점검표)
+document.querySelectorAll('.procmap [data-step]').forEach(el => {
   el.classList.add('step-link');
   el.setAttribute('role', 'button');
-  el.addEventListener('click', () => window.FA_TOOLS && window.FA_TOOLS.open(t));
+  el.tabIndex = 0;
+  const go = () => {
+    const s = el.dataset.step;
+    if (s === 'ic') { if (itemsFor('내부통제').length) renderCheck('내부통제'); }
+    else if (window.FA_TOOLS) window.FA_TOOLS.open(s);
+  };
+  el.addEventListener('click', go);
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
 });
 $('#orgChip').addEventListener('click', () => show('gate'));
 $('#gateBack').addEventListener('click', () => { renderHome(); show('home'); });
@@ -315,6 +320,7 @@ window.FA = {
   items: () => CHECKITEMS,
   itemsFor,
   respAll,
+  openCheck: (mod) => { if (itemsFor(mod).length) renderCheck(mod); },
 };
 
 /* ── 초기화 ── */
