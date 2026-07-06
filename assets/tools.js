@@ -1074,9 +1074,11 @@
   window.FA_TOOLS = {
     open(tool) {
       if (!orgOf()) { alert('기관유형을 먼저 선택하십시오.'); return; }
-      ({ tie: renderTie, risk: renderRisk, cases: renderCases, tree: renderTree, calc: renderCalc, report: renderReport, kb: renderKb, desk: renderDesk, budget: renderBudget })[tool]();
+      ({ tie: renderTie, risk: renderRisk, cases: renderCases, tree: renderTree, calc: renderCalc, report: renderReport, kb: renderKb, desk: renderDesk, budget: renderBudget,
+         lab: () => window.FA_LAB && window.FA_LAB.render() })[tool]();
     },
     expandQuery, // 홈 점검항목 검색이 동일 동의어 확장을 사용
+    excAdd,      // 자료 대조실 후보 → 예외 등록 연계
   };
   let caseQT = 0;
   $('#caseQ').addEventListener('input', () => {
